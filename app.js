@@ -459,103 +459,98 @@ function runScraperConsole() {
     }, 7000);
 }
 
-// Fetch romance books from Gutenberg (via Gutendex API)
+// Fetch romance books from Gutenberg — loops 14 pages for 400+ novels
 async function fetchGutenbergRomance() {
-    try {
-        scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] Fetching real romance books from Project Gutenberg API...`;
-        
-        // Fetch books from gutendex API with romance topic
-        const response = await fetch('https://gutendex.com/books/?topic=romance');
-        if (!response.ok) throw new Error("Gutenberg server returned error response");
-        
-        const data = await response.json();
-        const results = data.results || [];
-        
-        let addedCount = 0;
-        
-        results.forEach(book => {
-            const idStr = `gutenberg-${book.id}`;
-            
-            // Check if already in our catalog
-            if (appState.scrapedIds.has(idStr)) return;
-            
-            // Map the Gutenberg record into our clean database format
-            const authorObj = book.authors[0] || { name: "Unknown Author", birth_year: null };
-            
-            // Determine romance subgenre based on subjects or randomly to distribute
-            let mappedSubgenre = "Historical"; // Default for Gutenberg classics
-            const subjectsJoined = (book.subjects || []).join(' ').toLowerCase();
-            
-            if (subjectsJoined.includes('gothic') || subjectsJoined.includes('ghost') || subjectsJoined.includes('mystery')) {
-                mappedSubgenre = "Gothic";
-            } else if (subjectsJoined.includes('fantasy') || subjectsJoined.includes('magic') || subjectsJoined.includes('fairy')) {
-                mappedSubgenre = "Fantasy/Paranormal";
-            } else if (subjectsJoined.includes('science fiction') || subjectsJoined.includes('future')) {
-                mappedSubgenre = "Sci-Fi";
-            } else if (subjectsJoined.includes('contemporary') || subjectsJoined.includes('modern')) {
-                mappedSubgenre = "Contemporary";
-            }
-            
-            // Extract download links
-            const epubLink = book.formats['application/epub+zip'] || "#";
-            const pdfLink = book.formats['application/pdf'] || book.formats['text/html'] || "#"; // Fallback to html reader if pdf missing
-            
-            // Generate standard summary if none is present (Gutenberg doesn't provide summaries)
-            const generatedSynopsis = `A beautiful classic romance written by ${authorObj.name}. Set in a historical era, it explores themes of courtship, family expectations, and the emotional struggles of love. It remains highly popular, with over ${book.download_count} direct downloads from Project Gutenberg. Listed under: ${book.subjects.slice(0, 3).join(', ')}.`;
-            
-            // Assemble Trope Tags based on subjects
-            let tropes = ["Classics", "Slow Burn", "Historical Setting"];
-            if (mappedSubgenre === "Gothic") tropes.push("Gothic Secrets", "Dark Secrets");
-            if (mappedSubgenre === "Fantasy/Paranormal") tropes.push("Magical Worlds", "Fate");
-            if (book.languages.includes('fr')) tropes.push("French Classic");
-            
-            // Push to catalog
-            appState.catalog.push({
-                id: idStr,
-                title: book.title,
-                author: cleanAuthorName(authorObj.name),
-                year: authorObj.birth_year ? authorObj.birth_year + 30 : 1880, // rough guess of writing year
-                language: book.languages[0] || "en",
-                genres: ["Classics", "Historical"],
-                subgenre: mappedSubgenre,
-                rating: parseFloat((4.4 + Math.random() * 0.5).toFixed(1)), // rating between 4.4 and 4.9
-                popularity: book.download_count || 1200,
-                pages: Math.floor(200 + Math.random() * 250),
-                quickHook: `Classic romantic literature. A beautiful story about love and courtship in the 19th century.`,
-                synopsis: generatedSynopsis,
-                tropes: tropes,
-                downloadUrlEpub: epubLink,
-                downloadUrlPdf: pdfLink,
-                chapters: [
-                    {
-                        title: "Chapter I",
-                        content: [
-                            "The text of this public domain novel is ready for download in full EPUB and PDF formats.",
-                            "Click the 'Download EPUB' or 'Download PDF' button in the sidebar to download the complete book from Project Gutenberg's servers to read on your device.",
-                            "“It is a story of love, society, and human destiny,” wrote the reviewer. “A work that continues to capture hearts across centuries.”"
-                        ]
-                    }
-                ]
+    const MAX_PAGES = 14; // ~32 books per page = ~450 total
+    let totalAdded = 0;
+
+    for (let page = 1; page <= MAX_PAGES; page++) {
+        try {
+            scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] Syncing page ${page}/${MAX_PAGES} from Project Gutenberg...`;
+
+            const response = await fetch(`https://gutendex.com/books/?topic=romance&page=${page}`);
+            if (!response.ok) throw new Error(`Page ${page} failed`);
+
+            const data = await response.json();
+            const results = data.results || [];
+
+            results.forEach(book => {
+                const idStr = `gutenberg-${book.id}`;
+                if (appState.scrapedIds.has(idStr)) return;
+
+                const authorObj = book.authors[0] || { name: "Unknown Author", birth_year: null };
+
+                let mappedSubgenre = "Historical";
+                const subjectsJoined = (book.subjects || []).join(' ').toLowerCase();
+                if (subjectsJoined.includes('gothic') || subjectsJoined.includes('ghost') || subjectsJoined.includes('mystery')) {
+                    mappedSubgenre = "Gothic";
+                } else if (subjectsJoined.includes('fantasy') || subjectsJoined.includes('magic') || subjectsJoined.includes('fairy')) {
+                    mappedSubgenre = "Fantasy/Paranormal";
+                } else if (subjectsJoined.includes('science fiction') || subjectsJoined.includes('future')) {
+                    mappedSubgenre = "Sci-Fi";
+                } else if (subjectsJoined.includes('contemporary') || subjectsJoined.includes('modern')) {
+                    mappedSubgenre = "Contemporary";
+                }
+
+                const epubLink = book.formats['application/epub+zip'] || "#";
+                const pdfLink  = book.formats['application/pdf'] || book.formats['text/html'] || "#";
+
+                const generatedSynopsis = `A beautiful classic romance written by ${authorObj.name}. Set in a historical era, it explores themes of courtship, family expectations, and the emotional struggles of love. It remains highly popular, with over ${book.download_count} direct downloads from Project Gutenberg. Listed under: ${book.subjects.slice(0, 3).join(', ')}.`;
+
+                let tropes = ["Classics", "Slow Burn", "Historical Setting"];
+                if (mappedSubgenre === "Gothic") tropes.push("Gothic Secrets", "Dark Secrets");
+                if (mappedSubgenre === "Fantasy/Paranormal") tropes.push("Magical Worlds", "Fate");
+                if (book.languages.includes('fr')) tropes.push("French Classic");
+
+                appState.catalog.push({
+                    id: idStr,
+                    title: book.title,
+                    author: cleanAuthorName(authorObj.name),
+                    year: authorObj.birth_year ? authorObj.birth_year + 30 : 1880,
+                    language: book.languages[0] || "en",
+                    genres: ["Classics", "Historical"],
+                    subgenre: mappedSubgenre,
+                    rating: parseFloat((4.4 + Math.random() * 0.5).toFixed(1)),
+                    popularity: book.download_count || 1200,
+                    pages: Math.floor(200 + Math.random() * 250),
+                    quickHook: `Classic romantic literature. A beautiful story about love and courtship in the 19th century.`,
+                    synopsis: generatedSynopsis,
+                    tropes: tropes,
+                    downloadUrlEpub: epubLink,
+                    downloadUrlPdf: pdfLink,
+                    chapters: [
+                        {
+                            title: "Chapter I",
+                            content: [
+                                "The text of this public domain novel is ready for download in full EPUB and PDF formats.",
+                                "Click the 'Download EPUB' or 'Download PDF' button in the sidebar to download the complete book from Project Gutenberg's servers to read on your device.",
+                                "\u201cIt is a story of love, society, and human destiny,\u201d wrote the reviewer. \u201cA work that continues to capture hearts across centuries.\u201d"
+                            ]
+                        }
+                    ]
+                });
+
+                appState.scrapedIds.add(idStr);
+                totalAdded++;
             });
-            
-            appState.scrapedIds.add(idStr);
-            addedCount++;
-        });
-        
-        syncedCount.textContent = appState.catalog.length;
-        scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] Live Sync Completed: Successfully fetched and imported ${addedCount} romance books from Project Gutenberg!`;
-        
-        // Update counts in sidebar filter and render
-        renderGenreFilters();
-        filterAndSortBooks();
-        
-    } catch (error) {
-        console.error("Gutenberg Fetch Failed: ", error);
-        scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] Sync Warning: Gutenberg API rate-limited. Running with cache storage.`;
-        syncedCount.textContent = appState.catalog.length;
-        renderGenreFilters();
-        filterAndSortBooks();
+
+            // Update live count + grid after every page
+            syncedCount.textContent = appState.catalog.length;
+            renderGenreFilters();
+            filterAndSortBooks();
+
+            // Pause between pages to avoid rate-limiting on the API
+            await new Promise(r => setTimeout(r, 400));
+
+        } catch (error) {
+            console.warn(`Gutenberg page ${page} failed:`, error);
+            scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] Warning: page ${page} unavailable, continuing...`;
+        }
     }
+
+    syncedCount.textContent = appState.catalog.length;
+    scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] Full sync complete \u2014 ${appState.catalog.length} romance novels loaded!`;
+    showToast(`Sync complete! ${appState.catalog.length} novels now in your library.`, 'success');
 }
 
 // Clean Gutenberg author names (e.g. "Austen, Jane" to "Jane Austen")
@@ -1991,3 +1986,448 @@ function createFloatingHearts() {
         
     }, 1800);
 }
+
+// ============================================================
+// FEATURE: INDIVIDUAL NOVEL PAGE
+// Opens a full-screen dedicated page for each novel instead of
+// relying only on the modal. Reuses all existing CSS classes.
+// ============================================================
+
+function openNovelPage(bookId) {
+    const book = appState.catalog.find(b => b.id === bookId);
+    if (!book) return;
+
+    appState.currentBook = book;
+
+    // Create overlay element if it doesn't exist yet
+    let novelPage = document.getElementById('novelPageOverlay');
+    if (!novelPage) {
+        novelPage = document.createElement('div');
+        novelPage.id = 'novelPageOverlay';
+        // Reuse the existing modal-overlay class for backdrop/scroll handling
+        novelPage.className = 'modal-overlay';
+        novelPage.style.cssText = 'overflow-y:auto; align-items:flex-start; padding:0;';
+        document.body.appendChild(novelPage);
+    }
+
+    // Cover colour — mirrors the exact logic in openBookModal()
+    let coverBg = "linear-gradient(135deg, #1e0a12 0%, #000 100%)";
+    if (book.subgenre === "Fantasy/Paranormal") coverBg = "linear-gradient(135deg, #2d0b2e 0%, #09030a 100%)";
+    if (book.subgenre === "Contemporary")       coverBg = "linear-gradient(135deg, #e04a74 0%, #4a0f20 100%)";
+    if (book.subgenre === "Historical")         coverBg = "linear-gradient(135deg, #3a2215 0%, #150904 100%)";
+    if (book.subgenre === "Sci-Fi")             coverBg = "linear-gradient(135deg, #0f172a 0%, #020617 100%)";
+
+    // Star rating HTML
+    let starsHtml = '';
+    const rounded = Math.round(book.rating);
+    for (let i = 1; i <= 5; i++) starsHtml += i <= rounded ? '★' : '☆';
+
+    // Trope pills
+    const tropeHtml = (book.tropes || []).map(t => `<span class="genre-pill">${t}</span>`).join('');
+
+    // Chapters list (clickable)
+    const chaptersHtml = (book.chapters || []).map((ch, idx) => `
+        <div class="bookshelf-item" style="cursor:pointer; gap:1rem;"
+             onclick="renderNovelPageChapter('${book.id}', ${idx})">
+            <div style="width:36px;height:36px;border-radius:6px;background:var(--accent-glow);
+                        display:flex;align-items:center;justify-content:center;
+                        color:var(--accent);font-weight:700;font-size:0.75rem;flex-shrink:0;">
+                ${idx + 1}
+            </div>
+            <div style="flex:1;">
+                <div style="font-size:0.88rem;color:var(--text-primary);font-weight:600;">${ch.title}</div>
+                <div style="font-size:0.72rem;color:var(--text-muted);">Click to read preview</div>
+            </div>
+            <span style="color:var(--text-muted);font-size:1.1rem;">›</span>
+        </div>
+    `).join('');
+
+    // Existing reviews
+    const bookReviews = appState.reviews[book.id] || [];
+    const reviewsHtml = bookReviews.length === 0
+        ? `<p style="font-size:0.85rem;color:var(--text-muted);font-style:italic;">
+               No reviews yet. Be the first to share your thoughts!
+           </p>`
+        : bookReviews.map(r => {
+            let hearts = '';
+            for (let i = 1; i <= 5; i++) hearts += i <= r.rating ? '♥' : '♡';
+            return `
+                <div class="review-card">
+                    <div class="review-header">
+                        <span class="review-author">${r.author}</span>
+                        <span class="review-rating">${hearts}</span>
+                    </div>
+                    <p class="review-text">${r.text}</p>
+                </div>`;
+        }).join('');
+
+    const isOnShelf = appState.bookshelf.includes(book.id);
+
+    novelPage.innerHTML = `
+        <div style="width:100%;max-width:1200px;margin:0 auto;padding:1rem 1rem 4rem;
+                    display:flex;flex-direction:column;gap:1rem;">
+
+            <!-- Back bar — uses existing glass-panel + btn-secondary styling -->
+            <div class="glass-panel" style="display:flex;align-items:center;
+                         justify-content:space-between;padding:0.75rem 1.25rem;
+                         position:sticky;top:0.5rem;z-index:10;">
+                <button class="btn-secondary" style="padding:6px 14px;font-size:0.82rem;"
+                        onclick="closeNovelPage()">
+                    ← Back to Library
+                </button>
+                <span style="font-size:0.78rem;color:var(--text-muted);
+                             overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+                             flex:1;text-align:center;margin:0 1rem;">
+                    Lovestruck Hub / <span style="color:var(--text-secondary);">${book.title}</span>
+                </span>
+                <button class="btn-secondary" id="npTopShelfBtn"
+                        style="padding:6px 14px;font-size:0.82rem;
+                               ${isOnShelf ? 'border-color:var(--accent);color:var(--accent);' : ''}"
+                        onclick="toggleNovelPageShelf('${book.id}')">
+                    ${isOnShelf ? '♥ Saved' : '♥ Add to LoveList'}
+                </button>
+            </div>
+
+            <!-- Hero — mirrors the existing details modal layout -->
+            <div class="glass-panel" style="padding:2rem;display:flex;gap:2rem;
+                         flex-wrap:wrap;align-items:flex-start;">
+
+                <!-- Cover (same cover-design markup as the rest of the app) -->
+                <div style="flex-shrink:0;">
+                    <div class="details-cover" style="width:180px;height:260px;background:${coverBg};">
+                        <div class="cover-design">
+                            <span class="cover-badge">${book.subgenre}</span>
+                            <div class="cover-title" style="font-size:1rem;">${book.title}</div>
+                            <div>
+                                <div class="cover-author">${book.author}</div>
+                                <div class="cover-decorative-bar"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info -->
+                <div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:0.85rem;">
+                    <h1 style="font-family:var(--font-serif);font-size:clamp(1.5rem,3vw,2.4rem);
+                                font-weight:800;line-height:1.15;">${book.title}</h1>
+                    <p style="font-size:0.95rem;color:var(--text-muted);">
+                        by <span style="color:var(--gold);font-weight:600;">${book.author}</span>
+                    </p>
+
+                    <!-- Stats strip — reuses existing stat-item classes -->
+                    <div class="details-quick-stats" style="display:flex;flex-wrap:wrap;gap:0.5rem;">
+                        <div class="stat-item">
+                            <span class="stat-label">Rating</span>
+                            <span class="stat-value" style="color:var(--gold);">${starsHtml} ${book.rating}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Released</span>
+                            <span class="stat-value">${book.year}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Pages</span>
+                            <span class="stat-value">${book.pages}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Language</span>
+                            <span class="stat-value">${book.language.toUpperCase()}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Downloads</span>
+                            <span class="stat-value">${book.popularity.toLocaleString()}</span>
+                        </div>
+                    </div>
+
+                    <!-- Trope pills -->
+                    <div class="hero-genres">${tropeHtml}</div>
+
+                    <!-- Action buttons — identical to existing hero buttons -->
+                    <div class="hero-buttons" style="flex-wrap:wrap;">
+                        <button class="btn-primary" onclick="openReader('${book.id}')">
+                            📖 Read Preview
+                        </button>
+                        <button class="btn-secondary" id="npShelfBtn"
+                                style="${isOnShelf ? 'border-color:var(--accent);color:var(--accent);' : ''}"
+                                onclick="toggleNovelPageShelf('${book.id}')">
+                            ${isOnShelf ? '♥ Saved in LoveList' : '♥ Add to LoveList'}
+                        </button>
+                        <button class="btn-secondary"
+                                style="border-color:var(--gold);color:var(--gold);"
+                                onclick="startSimulatedDownload(appState.catalog.find(b=>b.id==='${book.id}'),'EPUB')">
+                            ⬇ EPUB
+                        </button>
+                        <button class="btn-secondary"
+                                style="border-color:var(--gold);color:var(--gold);"
+                                onclick="${book.id.startsWith('gutenberg-') ? `downloadFullGutenbergPDF(appState.catalog.find(b=>b.id==='${book.id}'))` : `startSimulatedDownload(appState.catalog.find(b=>b.id==='${book.id}'),'PDF')`}">
+                            ⬇ PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Synopsis -->
+            <div class="glass-panel" style="padding:1.5rem;">
+                <h4 class="details-synopsis-title">Synopsis</h4>
+                <p class="details-synopsis">${book.synopsis}</p>
+            </div>
+
+            <!-- Two-column: Chapters + Reviews -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;flex-wrap:wrap;">
+
+                <!-- Chapters -->
+                <div class="glass-panel" style="padding:1.5rem;">
+                    <h4 class="details-synopsis-title">Chapters Available</h4>
+                    <div class="bookshelf-list" style="max-height:none;padding:0;">
+                        ${chaptersHtml || '<p style="font-size:0.85rem;color:var(--text-muted);">Download the full book to read all chapters.</p>'}
+                    </div>
+                    <!-- Inline chapter reader (hidden until chapter clicked) -->
+                    <div id="npInlineReader" style="display:none;margin-top:1rem;
+                         border-top:1px solid var(--border-color);padding-top:1rem;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;
+                                    margin-bottom:0.75rem;">
+                            <strong id="npReaderChTitle" style="font-family:var(--font-serif);
+                                    font-size:0.95rem;color:var(--text-primary);"></strong>
+                            <button class="btn-icon" style="width:28px;height:28px;"
+                                    onclick="document.getElementById('npInlineReader').style.display='none'">✕</button>
+                        </div>
+                        <div id="npReaderText" class="details-synopsis"
+                             style="font-family:var(--font-serif);line-height:1.85;"></div>
+                    </div>
+                </div>
+
+                <!-- Reviews -->
+                <div class="glass-panel" style="padding:1.5rem;">
+                    <h4 class="details-synopsis-title">Reader Reviews</h4>
+                    <div id="npReviewsList" class="reviews-list">${reviewsHtml}</div>
+
+                    <!-- Write review form — same markup as the existing modal form -->
+                    <form class="add-review-form" onsubmit="return false;" style="margin-top:1rem;">
+                        <h5>Write a Review</h5>
+                        <div class="form-row">
+                            <input type="text" class="form-input" id="npReviewAuthor" placeholder="Your Name" required>
+                            <select class="form-input" id="npReviewRating" required>
+                                <option value="5">5 Hearts (Amazing)</option>
+                                <option value="4">4 Hearts (Great)</option>
+                                <option value="3">3 Hearts (Good)</option>
+                                <option value="2">2 Hearts (Okay)</option>
+                                <option value="1">1 Heart (Disliked)</option>
+                            </select>
+                        </div>
+                        <textarea class="form-textarea" id="npReviewText"
+                                  placeholder="Express your thoughts about this romance..." required></textarea>
+                        <button type="submit" class="btn-form-submit"
+                                onclick="postNovelPageReview('${book.id}')">Post Review</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Similar novels -->
+            <div class="glass-panel" style="padding:1.5rem;">
+                <h4 class="details-synopsis-title">More in ${book.subgenre} Romance</h4>
+                <div id="npSimilarBooks" class="book-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));"></div>
+            </div>
+        </div>
+    `;
+
+    // Show overlay
+    novelPage.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    // Update browser history so the back button closes the page naturally
+    history.pushState({ novelPage: bookId }, '', `#novel-${bookId}`);
+
+    // Render similar books into the grid
+    renderNovelPageSimilar(book);
+}
+
+function closeNovelPage() {
+    const overlay = document.getElementById('novelPageOverlay');
+    if (overlay) {
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+    if (location.hash.startsWith('#novel-')) {
+        history.pushState({}, '', location.pathname);
+    }
+}
+
+// Close novel page when browser back button is pressed
+window.addEventListener('popstate', () => {
+    const overlay = document.getElementById('novelPageOverlay');
+    if (overlay && overlay.classList.contains('active')) {
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+});
+
+function toggleNovelPageShelf(bookId) {
+    const isSaved = toggleSaveBook(bookId);
+    const label = isSaved ? '♥ Saved in LoveList' : '♥ Add to LoveList';
+    const style = isSaved ? 'border-color:var(--accent);color:var(--accent);' : '';
+    ['npShelfBtn', 'npTopShelfBtn'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) { btn.textContent = isSaved ? (id === 'npTopShelfBtn' ? '♥ Saved' : label) : label; btn.style.cssText = style; }
+    });
+}
+
+function renderNovelPageChapter(bookId, chapterIndex) {
+    const book = appState.catalog.find(b => b.id === bookId);
+    if (!book || !book.chapters[chapterIndex]) return;
+    const ch = book.chapters[chapterIndex];
+    document.getElementById('npReaderChTitle').textContent = ch.title;
+    document.getElementById('npReaderText').innerHTML = ch.content.map(p => `<p style="margin-bottom:1em;">${p}</p>`).join('');
+    const reader = document.getElementById('npInlineReader');
+    reader.style.display = 'block';
+    reader.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function postNovelPageReview(bookId) {
+    const author = document.getElementById('npReviewAuthor').value.trim();
+    const rating = parseInt(document.getElementById('npReviewRating').value);
+    const text   = document.getElementById('npReviewText').value.trim();
+    if (!author || !text) { showToast('Please fill in your name and review.', 'warning'); return; }
+
+    if (!appState.reviews[bookId]) appState.reviews[bookId] = [];
+    appState.reviews[bookId].unshift({ author, rating, text });
+    saveReviews();
+
+    document.getElementById('npReviewAuthor').value = '';
+    document.getElementById('npReviewText').value   = '';
+
+    // Refresh review list in the novel page
+    const list = document.getElementById('npReviewsList');
+    if (list) {
+        list.innerHTML = appState.reviews[bookId].map(r => {
+            let hearts = '';
+            for (let i = 1; i <= 5; i++) hearts += i <= r.rating ? '♥' : '♡';
+            return `<div class="review-card">
+                <div class="review-header">
+                    <span class="review-author">${r.author}</span>
+                    <span class="review-rating">${hearts}</span>
+                </div>
+                <p class="review-text">${r.text}</p>
+            </div>`;
+        }).join('');
+    }
+    showToast('Review posted successfully!', 'success');
+}
+
+function renderNovelPageSimilar(book) {
+    const container = document.getElementById('npSimilarBooks');
+    if (!container) return;
+
+    const similar = appState.catalog
+        .filter(b => b.id !== book.id && b.subgenre === book.subgenre)
+        .sort((a, b) => b.rating - a.rating)
+        .slice(0, 6);
+
+    if (similar.length === 0) {
+        container.innerHTML = '<p style="font-size:0.85rem;color:var(--text-muted);">No similar books found yet — check back as more sync in.</p>';
+        return;
+    }
+
+    similar.forEach(b => {
+        let bg = "linear-gradient(135deg, #1e0a12 0%, #000 100%)";
+        if (b.subgenre === "Fantasy/Paranormal") bg = "linear-gradient(135deg, #2d0b2e 0%, #09030a 100%)";
+        if (b.subgenre === "Contemporary")       bg = "linear-gradient(135deg, #e04a74 0%, #4a0f20 100%)";
+        if (b.subgenre === "Historical")         bg = "linear-gradient(135deg, #3a2215 0%, #150904 100%)";
+        if (b.subgenre === "Sci-Fi")             bg = "linear-gradient(135deg, #0f172a 0%, #020617 100%)";
+
+        let stars = '';
+        const r = Math.round(b.rating);
+        for (let i = 1; i <= 5; i++) stars += i <= r ? '★' : '☆';
+
+        const card = document.createElement('div');
+        card.className = 'book-card glass-panel';
+        card.style.cursor = 'pointer';
+        card.innerHTML = `
+            <div class="card-cover-wrapper">
+                <div class="card-cover" style="background:${bg};">
+                    <div class="cover-design">
+                        <span class="cover-badge">${b.subgenre}</span>
+                        <div class="card-title-mini">${b.title}</div>
+                        <div>
+                            <div class="card-author-mini">${b.author}</div>
+                            <div style="height:3px;width:35px;background:var(--accent);border-radius:9px;margin:4px auto 0;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-info">
+                <div>
+                    <div class="card-meta-row">
+                        <div class="rating-badge">${stars} <span>${b.rating}</span></div>
+                        <span class="lang-badge">${b.language.toUpperCase()}</span>
+                    </div>
+                    <h3 class="card-title">${b.title}</h3>
+                    <p class="card-author">by ${b.author}</p>
+                </div>
+            </div>`;
+        card.onclick = () => openNovelPage(b.id);
+        container.appendChild(card);
+    });
+}
+
+// Make every book card open the novel page instead of the details modal
+// We patch renderBookGrid() to rewire the click handlers after render.
+const _origRenderBookGrid = renderBookGrid;
+window.renderBookGrid = function(books) {
+    _origRenderBookGrid(books);
+    document.querySelectorAll('.book-card').forEach(card => {
+        // Find the book id from the Quick View button's onclick attribute
+        const qvBtn = card.querySelector('.btn-card-primary');
+        if (!qvBtn) return;
+        const match = (qvBtn.getAttribute('onclick') || '').match(/openBookModal\('([^']+)'\)/);
+        if (!match) return;
+        const bookId = match[1];
+        // Rewire card click → novel page
+        card.onclick = () => openNovelPage(bookId);
+        // Also rewire Quick View button → novel page
+        qvBtn.setAttribute('onclick', `event.stopPropagation(); openNovelPage('${bookId}')`);
+    });
+};
+
+// ============================================================
+// FEATURE: IMPROVED SEARCH — faster, live feedback in log bar
+// ============================================================
+// The existing bindEvents() sets up search with a 300ms debounce.
+// We upgrade to 200ms and add live counts in the scraper log.
+
+const _origBindEvents = bindEvents;
+window.bindEvents = function() {
+    _origBindEvents();
+
+    // Detach the old oninput so we don't double-fire
+    searchInput.oninput = null;
+
+    let searchDebounce;
+    searchInput.addEventListener('input', () => {
+        const q = searchInput.value;
+        searchClearBtn.style.display = q.length > 0 ? 'flex' : 'none';
+
+        if (q.trim().length > 0) {
+            scraperLogText.textContent = `[SEARCH] Scanning ${appState.catalog.length} novels for: "${q.trim()}"...`;
+        }
+
+        clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(() => {
+            appState.searchQuery = q;
+            filterAndSortBooks();
+            if (q.trim().length > 0) {
+                const countEl = document.getElementById('resultsCount');
+                const num = countEl ? countEl.textContent : '';
+                scraperLogText.textContent = `[SEARCH] Found ${num} matches for "${q.trim()}" across ${appState.catalog.length} novels.`;
+            }
+        }, 200);
+    });
+
+    // Clear button
+    searchClearBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        searchClearBtn.style.display = 'none';
+        appState.searchQuery = '';
+        filterAndSortBooks();
+        scraperLogText.textContent = `[SEARCH] Cleared — showing full catalog (${appState.catalog.length} novels).`;
+        searchInput.focus();
+    });
+};
