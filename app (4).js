@@ -1,0 +1,2631 @@
+// Lovestruck Hub - Application Logic
+
+// 1. Curated Classic & Modern Romance Novels (Local Seed Database)
+// Used for instant load, offline support, and high-fidelity previews.
+const localRomanceDatabase = [
+    {
+        id: "pride-and-prejudice",
+        title: "Pride and Prejudice",
+        author: "Jane Austen",
+        year: 1813,
+        language: "en",
+        genres: ["Historical", "Classics"],
+        subgenre: "Historical",
+        rating: 4.9,
+        popularity: 245900,
+        pages: 320,
+        quickHook: "The ultimate enemies-to-lovers romance. Will Elizabeth's wit and Darcy's pride keep them apart forever?",
+        synopsis: "In the regency era, the Bennet family has five unmarried daughters, and Mrs. Bennet is desperate to see them all matched with wealthy suitors. When the rich and single Mr. Bingley arrives in the neighborhood, sparks fly between him and Elizabeth's sister, Jane. However, Bingley's proud friend Mr. Darcy offends Elizabeth at a local ball, sparking a battle of wits. As their paths repeatedly cross, Elizabeth and Darcy must overcome their pride and deep-seated prejudices to realize their mutual affection.",
+        tropes: ["Enemies to Lovers", "Classics", "Regency Courtship", "Slow Burn", "Misunderstandings"],
+        downloadUrlEpub: "https://www.gutenberg.org/ebooks/1342.epub.images",
+        downloadUrlPdf: "https://www.gutenberg.org/files/1342/1342-pdf.pdf",
+        chapters: [
+            {
+                title: "Chapter I: The Truth Universal",
+                content: [
+                    "It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.",
+                    "However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered the rightful property of some one or other of their daughters.",
+                    "“My dear Mr. Bennet,” said his lady to him one day, “have you heard that Netherfield Park is let at last?”",
+                    "Mr. Bennet replied that he had not.",
+                    "“But it is,” returned she; “for Mrs. Long has just been here, and she told me all about it.” Mr. Bennet made no answer.",
+                    "“Do you not want to know who has taken it?” cried his wife impatiently.",
+                    "“*You* want to tell me, and I have no objection to hearing it.” This was invitation enough."
+                ]
+            },
+            {
+                title: "Chapter II: An Introduction",
+                content: [
+                    "Mr. Bennet was among the earliest of those who waited on Mr. Bingley. He had always intended to visit him, though to the last always assuring his wife that he should not go; and till the evening after the visit was paid she had no knowledge of it.",
+                    "It was then disclosed in the following manner. Observing his second daughter employed in trimming a hat, he suddenly addressed her with: “I hope Mr. Bingley will like it, Lizzy.”",
+                    "“We are not in a way to know what Mr. Bingley likes,” said her mother resentfully, “since we are not to visit.”",
+                    "“But you forget, mamma,” said Elizabeth, “that we shall meet him at the assemblies, and that Mrs. Long promised to introduce him.”",
+                    "“I do not believe Mrs. Long will do any such thing. She has two nieces of her own. She is a selfish, hypocritical woman, and I have no opinion of her.”"
+                ]
+            }
+        ]
+    },
+    {
+        id: "jane-eyre",
+        title: "Jane Eyre",
+        author: "Charlotte Brontë",
+        year: 1847,
+        language: "en",
+        genres: ["Gothic", "Classics"],
+        subgenre: "Gothic",
+        rating: 4.8,
+        popularity: 184200,
+        pages: 450,
+        quickHook: "A passionate gothic romance. Orphan Jane Eyre takes a governess post at Thornfield Hall, uncovering the dark secrets of the brooding Mr. Rochester.",
+        synopsis: "Jane Eyre, a plain yet fiercely independent orphan, survives a harsh upbringing to become a governess at Thornfield Hall. She finds herself deeply drawn to her employer, the wealthy, moody, and magnetic Edward Rochester. As Rochester reciprocates her feelings, their passionate connection seems destined for marriage. However, Thornfield Hall hides a terrible, gothic secret locked in the attic that threatens to tear Jane and Rochester apart, forcing Jane to choose between her heart and her self-respect.",
+        tropes: ["Gothic Secrets", "Classics", "Forbidden Love", "Social Divide", "Dark Mystery"],
+        downloadUrlEpub: "https://www.gutenberg.org/ebooks/1230.epub.images",
+        downloadUrlPdf: "https://www.gutenberg.org/files/1230/1230-pdf.pdf",
+        chapters: [
+            {
+                title: "Chapter I: The Red Room",
+                content: [
+                    "There was no possibility of taking a walk that day. We had been wandering, indeed, in the leafless shrubbery an hour in the morning; but since dinner (Mrs. Reed, when there was no company, dined early) the cold winter wind had brought with it clouds so sombre, and a rain so penetrating, that further outdoor exercise was now out of the question.",
+                    "I was glad of it: I never liked long walks, especially on chilly afternoons: dreadful to me was the coming home in the raw twilight, with nipped fingers and toes, and a heart saddened by the chidings of Bessie, the nurse, and humbled by the consciousness of my physical inferiority to Eliza, John, and Georgiana Reed.",
+                    "The said Eliza, John, and Georgiana were now clustered round their mamma in the drawing-room: she lay reclined on a sofa by the fireside, and with her darlings about her (for the time neither quarrelling nor crying) looked perfectly happy."
+                ]
+            }
+        ]
+    },
+    {
+        id: "wuthering-heights",
+        title: "Wuthering Heights",
+        author: "Emily Brontë",
+        year: 1847,
+        language: "en",
+        genres: ["Gothic", "Classics"],
+        subgenre: "Gothic",
+        rating: 4.7,
+        popularity: 169800,
+        pages: 348,
+        quickHook: "A stormy, destructive romance. The all-consuming love of Heathcliff and Catherine Earnshaw echoes across the desolate Yorkshire moors.",
+        synopsis: "Set against the wild, desolate Yorkshire moors, this classic gothic romance follows the turbulent relationship between Catherine Earnshaw and the foundling Heathcliff. Raised together as soulmates, their intense bond is severed when Catherine marries the high-status Edgar Linton. Devastated and seeking vengeance, Heathcliff returns years later as a wealthy, bitter man. His obsession with Catherine triggers a cycle of revenge, betrayal, and passion that extends to the next generation, proving that some loves are as permanent and destructive as the storm.",
+        tropes: ["Soulmates", "Revenge Romance", "Gothic Secrets", "Tragic Love", "Desolate Settings"],
+        downloadUrlEpub: "https://www.gutenberg.org/ebooks/768.epub.images",
+        downloadUrlPdf: "https://www.gutenberg.org/files/768/768-pdf.pdf",
+        chapters: [
+            {
+                title: "Chapter I: Mr. Lockwood's Visit",
+                content: [
+                    "1801.—I have just returned from a visit to my landlord—the solitary neighbour that I shall be troubled with. This is certainly a beautiful country! In all England, I do not believe that I could have fixed on a situation so completely removed from the stir of society.",
+                    "A perfect misanthropist’s heaven: and Mr. Heathcliff and I are such a suitable pair to divide the desolation between us. A capital fellow! He little imagined how my heart warmed towards him when I beheld his black eyes withdraw so suspiciously under their brows.",
+                    "“Mr. Heathcliff?” I said.",
+                    "A nod was the answer.",
+                    "“Lockwood, your new tenant, sir. I do myself the honour of calling as soon as possible after my arrival, to express the hope that I have not inconvenienced you by my importunity in soliciting the residence.”",
+                    "“Wuthering Heights is not a country villa,” he replied, with no cordiality. “Come in!”"
+                ]
+            }
+        ]
+    },
+    {
+        id: "romeo-and-juliet",
+        title: "Romeo and Juliet",
+        author: "William Shakespeare",
+        year: 1597,
+        language: "en",
+        genres: ["Tragic Romance", "Classics"],
+        subgenre: "Dark Romance",
+        rating: 4.6,
+        popularity: 145000,
+        pages: 180,
+        quickHook: "The ultimate star-crossed lovers. Two teenagers from warring noble families in Verona defy destiny to be together.",
+        synopsis: "In Verona, Italy, an ancient feud between the Montague and Capulet families frequently breaks out into violence. Romeo Montague sneaks into a Capulet ball, where he meets and falls instantly in love with Juliet Capulet. Discovering they belong to enemy factions, they secretly marry with the help of Friar Laurence. However, a chain of misunderstandings, street brawls, and banishments leads to a desperate scheme that goes tragically awry, cementing their love in immortality.",
+        tropes: ["Forbidden Love", "Star Crossed", "Tragic Love", "Instant Attraction", "Warring Families"],
+        downloadUrlEpub: "https://www.gutenberg.org/ebooks/1513.epub.images",
+        downloadUrlPdf: "https://www.gutenberg.org/files/1513/1513-pdf.pdf",
+        chapters: [
+            {
+                title: "Prologue & Act I, Scene I",
+                content: [
+                    "Two households, both alike in dignity, In fair Verona, where we lay our scene, From ancient grudge break to new mutiny, Where civil blood makes civil hands unclean.",
+                    "From forth the fatal loins of these two foes, A pair of star-cross'd lovers take their life; Whose misadventured piteous overthrows Do with their death bury their parents' strife.",
+                    "Gregory,” said Sampson, “on my word, we’ll not carry coals.”",
+                    "“No,” replied Gregory, “for then we should be colliers.”",
+                    "“I mean, an we be in choler, we’ll draw.”",
+                    "“Ay, while you live, draw your neck out o’ the collar.”"
+                ]
+            }
+        ]
+    },
+    {
+        id: "court-of-thorns-roses",
+        title: "A Court of Thorns and Roses",
+        author: "Sarah J. Maas",
+        year: 2015,
+        language: "en",
+        genres: ["Fantasy", "Modern Bestsellers"],
+        subgenre: "Fantasy/Paranormal",
+        rating: 4.8,
+        popularity: 382000,
+        pages: 416,
+        quickHook: "A thrilling fantasy romance. Mortal huntress Feyre kills a wolf in the woods and is dragged into a dangerous fae realm.",
+        synopsis: "Feyre, a nineteen-year-old huntress, kills a massive wolf to feed her starving family. Soon after, a terrifying beast arrives to demand retribution, dragging her across the magical wall into the lethal, enchanted lands of Prythian. Feyre learns her captor is not a beast, but Tamlin—one of the deadly, immortal High Fae. As she dwells at the Spring Court, her cold resentment transforms into a fiery passion. But a dark shadow is spreading over Prythian, and Feyre must break an ancient curse to save Tamlin and his court.",
+        tropes: ["Fae Romance", "Beauty and the Beast", "Forbidden Love", "Slow Burn", "Magical Worlds"],
+        downloadUrlEpub: "#",
+        downloadUrlPdf: "#",
+        chapters: [
+            {
+                title: "Chapter 1: The Cold Hunt",
+                content: [
+                    "The forest had become a labyrinth of ice and snow. I lay behind a fallen log, my fingers numb against the wooden bow, watching the clearing ahead.",
+                    "A massive grey wolf stepped into the clearing, its eyes golden and intelligent. It was the size of a pony. I knew it wasn't a normal wolf. It came from across the wall—from Prythian, the land of the fae.",
+                    "My family was starving. The pelt of this beast would buy us bread for a month. I drew the arrow back, letting the cold air fill my lungs, and aimed straight for its eye."
+                ]
+            }
+        ]
+    },
+    {
+        id: "love-hypothesis",
+        title: "The Love Hypothesis",
+        author: "Ali Hazelwood",
+        year: 2021,
+        language: "en",
+        genres: ["Contemporary", "Modern Bestsellers"],
+        subgenre: "Contemporary",
+        rating: 4.7,
+        popularity: 295000,
+        pages: 352,
+        quickHook: "A charming STEM comedy. A third-year Ph.D. candidate kisses a notorious professor to fake a relationship.",
+        synopsis: "Olive Smith, a biology Ph.D. student, doesn't believe in lasting romantic relationships. To convince her best friend she's dating, Olive panics and kisses the first man she sees in the lab. That man happens to be Dr. Adam Carlsen, a brilliant but notoriously hostile young professor. To Olive's shock, Adam agrees to keep up the charade. As they navigate academic conferences and fake dates, Olive discovers that the only thing more volatile than a science experiment is falling in love for real.",
+        tropes: ["Fake Dating", "Grumpy x Sunshine", "Academic Romance", "Only One Bed", "Slow Burn"],
+        downloadUrlEpub: "#",
+        downloadUrlPdf: "#",
+        chapters: [
+            {
+                title: "Chapter 1: The Panic Kiss",
+                content: [
+                    "Olive stood in the hallway of the biology department, looking at her best friend Anh approaching. Anh was determined to verify that Olive had moved on from her ex.",
+                    "Panic set in. Olive looked around. The corridor was empty except for a tall man walking towards her, looking down at some papers. Without thinking, Olive stepped in front of him, grabbed his lapels, and pressed her lips to his.",
+                    "He froze. He felt like a solid granite pillar. When Olive pulled back, she gasped in horror. She had just kissed Dr. Adam Carlsen—the most hated, arrogant professor in the entire graduate school."
+                ]
+            }
+        ]
+    }
+];
+
+// Trope Quiz Questions
+const quizQuestions = [
+    {
+        question: "Choose your favorite reading environment:",
+        options: [
+            { text: "A candlelit gothic library while rain beats on the window", value: "Gothic" },
+            { text: "A cozy modern coffee shop in the heart of Paris", value: "Contemporary" },
+            { text: "A royal ballroom in regency England during a grand assembly", value: "Historical" },
+            { text: "A glowing mystical forest under two moons", value: "Fantasy/Paranormal" }
+        ]
+    },
+    {
+        question: "What is your absolute favorite romantic trope?",
+        options: [
+            { text: "Sparks flying between bitter rivals (Enemies to Lovers)", value: "Enemies to Lovers" },
+            { text: "Pretending to date for convenience, then catching feelings (Fake Dating)", value: "Fake Dating" },
+            { text: "Loving someone you shouldn't (Forbidden/Star-Crossed)", value: "Forbidden Love" },
+            { text: "A grumpy character who is only soft for one person (Grumpy x Sunshine)", value: "Grumpy x Sunshine" }
+        ]
+    },
+    {
+        question: "What kind of romance speed or stakes do you prefer?",
+        options: [
+            { text: "Slow burn with intense tension and witty banter", value: "slow-burn" },
+            { text: "Instant connection and intense chemistry", value: "instant" },
+            { text: "Tragic obstacles, dark secrets, and high emotional drama", value: "high-stakes" }
+        ]
+    }
+];
+
+// App State Management
+let appState = {
+    theme: 'dark',
+    activeSubgenreFilter: 'All',
+    searchQuery: '',
+    sortBy: 'popularity',
+    langFilter: 'all',
+    bookshelf: [], // Array of book IDs saved to reading list
+    reviews: {}, // Key: bookId, Value: array of review objects
+    catalog: [...localRomanceDatabase], // Full active catalog (local + fetched Gutenberg)
+    currentBook: null, // Selected book for details
+    currentReadingBook: null, // Selected book in reader
+    currentChapterIndex: 0,
+    currentFontSize: 1.15, // in rem
+    readerTheme: 'theme-reader-dark',
+    readerFont: 'reader-text-serif',
+    quizStep: 0,
+    quizAnswers: [],
+    syncActive: true,
+    scrapedIds: new Set(localRomanceDatabase.map(b => b.id))
+};
+
+// DOM Cache
+const searchInput = document.getElementById('searchInput');
+const searchClearBtn = document.getElementById('searchClearBtn');
+const themeToggleBtn = document.getElementById('themeToggleBtn');
+const themeIcon = document.getElementById('themeIcon');
+const bookshelfOpenBtn = document.getElementById('bookshelfOpenBtn');
+const libraryCountBadge = document.getElementById('libraryCountBadge');
+
+// Hero elements
+const heroTitle = document.getElementById('heroTitle');
+const heroCoverTitle = document.getElementById('heroCoverTitle');
+const heroCoverAuthor = document.getElementById('heroCoverAuthor');
+const heroCover = document.getElementById('heroCover');
+const heroRatingStars = document.getElementById('heroRatingStars');
+const heroRatingNumber = document.getElementById('heroRatingNumber');
+const heroReleaseYear = document.getElementById('heroReleaseYear');
+const heroLanguage = document.getElementById('heroLanguage');
+const heroPages = document.getElementById('heroPages');
+const heroDescription = document.getElementById('heroDescription');
+const heroGenres = document.getElementById('heroGenres');
+const heroReadBtn = document.getElementById('heroReadBtn');
+const heroDetailsBtn = document.getElementById('heroDetailsBtn');
+
+// Dashboard & feed elements
+const scraperLogText = document.getElementById('scraperLogText');
+const syncedCount = document.getElementById('syncedCount');
+const genreFilterList = document.getElementById('genreFilterList');
+const sortBySelect = document.getElementById('sortBySelect');
+const langSelect = document.getElementById('langSelect');
+const feedHeading = document.getElementById('feedHeading');
+const resultsCount = document.getElementById('resultsCount');
+const bookGrid = document.getElementById('bookGrid');
+const quizStartBtn = document.getElementById('quizStartBtn');
+
+// Modals
+const bookDetailsModal = document.getElementById('bookDetailsModal');
+const closeDetailsBtn = document.getElementById('closeDetailsBtn');
+const readerModal = document.getElementById('readerModal');
+const closeReaderBtn = document.getElementById('closeReaderBtn');
+const bookshelfModal = document.getElementById('bookshelfModal');
+const closeBookshelfBtn = document.getElementById('closeBookshelfBtn');
+const bookshelfList = document.getElementById('bookshelfList');
+const quizModal = document.getElementById('quizModal');
+const closeQuizBtn = document.getElementById('closeQuizBtn');
+const quizContent = document.getElementById('quizContent');
+
+// Details Modal specific items
+const modalTitle = document.getElementById('modalTitle');
+const modalAuthor = document.getElementById('modalAuthor');
+const modalCoverTitle = document.getElementById('modalCoverTitle');
+const modalCoverAuthor = document.getElementById('modalCoverAuthor');
+const modalCover = document.getElementById('modalCover');
+const modalCoverBadge = document.getElementById('modalCoverBadge');
+const modalStatReleased = document.getElementById('modalStatReleased');
+const modalStatLanguage = document.getElementById('modalStatLanguage');
+const modalStatDownloads = document.getElementById('modalStatDownloads');
+const modalStatRating = document.getElementById('modalStatRating');
+const modalSynopsis = document.getElementById('modalSynopsis');
+const modalThemes = document.getElementById('modalThemes');
+const modalReviewsList = document.getElementById('modalReviewsList');
+const modalReadBtn = document.getElementById('modalReadBtn');
+const modalShelfBtn = document.getElementById('modalShelfBtn');
+const modalDownloadEpub = document.getElementById('modalDownloadEpub');
+const modalDownloadPdf = document.getElementById('modalDownloadPdf');
+const downloadProgressContainer = document.getElementById('downloadProgressContainer');
+const downloadStatusText = document.getElementById('downloadStatusText');
+const downloadProgressPercentage = document.getElementById('downloadProgressPercentage');
+const downloadProgressFill = document.getElementById('downloadProgressFill');
+const addReviewForm = document.getElementById('addReviewForm');
+
+// Reader Elements
+const readerBookTitle = document.getElementById('readerBookTitle');
+const readerBookAuthor = document.getElementById('readerBookAuthor');
+const readerBody = document.getElementById('readerBody');
+const readerTextContent = document.getElementById('readerTextContent');
+const readerProgressText = document.getElementById('readerProgressText');
+const readerProgressBarFill = document.getElementById('readerProgressBarFill');
+const readerPrevBtn = document.getElementById('readerPrevBtn');
+const readerNextBtn = document.getElementById('readerNextBtn');
+const readerFontToggle = document.getElementById('readerFontToggle');
+const readerFontSizeDown = document.getElementById('readerFontSizeDown');
+const readerFontSizeUp = document.getElementById('readerFontSizeUp');
+const readerThemeToggle = document.getElementById('readerThemeToggle');
+
+// Toast notifications
+const toastContainer = document.getElementById('toastContainer');
+
+// ----------------------------------------------------
+// 2. TOAST SYSTEM
+// ----------------------------------------------------
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    let icon = 'ℹ️';
+    if (type === 'success') icon = '💖';
+    if (type === 'warning') icon = '⚠️';
+    
+    toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+    toastContainer.appendChild(toast);
+    
+    // Slide out animation
+    setTimeout(() => {
+        toast.style.animation = 'slideInRight 0.2s reverse forwards';
+        setTimeout(() => {
+            toast.remove();
+        }, 200);
+    }, 3000);
+}
+
+// ----------------------------------------------------
+// 3. CORE LOCAL STORAGE ENGINE
+// ----------------------------------------------------
+function loadState() {
+    // Load theme
+    const savedTheme = localStorage.getItem('lovestruck_theme');
+    if (savedTheme) {
+        appState.theme = savedTheme;
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        updateThemeUI();
+    }
+
+    // Load bookshelf
+    const savedShelf = localStorage.getItem('lovestruck_bookshelf');
+    if (savedShelf) {
+        appState.bookshelf = JSON.parse(savedShelf);
+        updateLibraryBadge();
+    }
+
+    // Load reviews
+    const savedReviews = localStorage.getItem('lovestruck_reviews');
+    if (savedReviews) {
+        appState.reviews = JSON.parse(savedReviews);
+    } else {
+        // Pre-populate some reviews
+        appState.reviews = {
+            "pride-and-prejudice": [
+                { author: "Marianne D.", rating: 5, text: "I have read this ten times and Darcy's proposal still makes my heart race. Elizabeth is the best heroine ever written!" },
+                { author: "Henry Wood", rating: 4, text: "A timeless masterpiece of tension, social critique, and brilliant banter. The slow burn is agonizing in the best way." }
+            ],
+            "jane-eyre": [
+                { author: "GothicRose", rating: 5, text: "Atmospheric, passionate, and dark. Mr. Rochester is the ultimate complex romantic hero. Thornfield Hall is beautifully spooky!" }
+            ],
+            "love-hypothesis": [
+                { author: "Chloe STEM", rating: 5, text: "So cute! Olive and Adam have incredible chemistry. A hilarious, smart, modern fake-dating romance." }
+            ]
+        };
+        localStorage.setItem('lovestruck_reviews', JSON.stringify(appState.reviews));
+    }
+}
+
+function saveBookshelf() {
+    localStorage.setItem('lovestruck_bookshelf', JSON.stringify(appState.bookshelf));
+    updateLibraryBadge();
+}
+
+function saveReviews() {
+    localStorage.setItem('lovestruck_reviews', JSON.stringify(appState.reviews));
+}
+
+function updateLibraryBadge() {
+    libraryCountBadge.textContent = appState.bookshelf.length;
+}
+
+// ----------------------------------------------------
+// 4. THEME SWITCHER
+// ----------------------------------------------------
+function updateThemeUI() {
+    if (appState.theme === 'light') {
+        themeIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />`; // Moon
+        themeToggleBtn.title = "Switch to Dark Velvet Theme";
+    } else {
+        themeIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m2.828 0l-.707-.707M17.657 6.343l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />`; // Sun
+        themeToggleBtn.title = "Switch to Light Rose Theme";
+    }
+}
+
+function toggleTheme() {
+    appState.theme = appState.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', appState.theme);
+    localStorage.setItem('lovestruck_theme', appState.theme);
+    updateThemeUI();
+    showToast(`Switched to ${appState.theme === 'dark' ? 'Dark Velvet' : 'Light Rose'} mode`, 'success');
+}
+
+// ----------------------------------------------------
+// 5. LIVE SCRAPER / REAL API SCANNER ENGINE (Gutenberg)
+// ----------------------------------------------------
+const consoleLogs = [
+    "Scanning Project Gutenberg libraries for romance tags...",
+    "Found active books on host gutendex.com/books...",
+    "Querying subject: 'man-woman relationships' AND 'romance'...",
+    "Accessing metadata links for EPUB / PDF formats...",
+    "Analyzing book titles: scanning cover designs...",
+    "Mapping public domain classics to Romance Subgenres...",
+    "Listening for new database updates on Project Gutenberg API..."
+];
+
+let logIndex = 0;
+function runScraperConsole() {
+    setInterval(() => {
+        if (!appState.syncActive) return;
+        
+        // Output some cool developer logs
+        const timeStamp = new Date().toLocaleTimeString();
+        let logMsg = "";
+        
+        if (Math.random() > 0.4) {
+            logMsg = `[${timeStamp}] ${consoleLogs[logIndex]}`;
+            logIndex = (logIndex + 1) % consoleLogs.length;
+        } else {
+            // Pick a random book and show a syncing log
+            const randomBook = appState.catalog[Math.floor(Math.random() * appState.catalog.length)];
+            logMsg = `[${timeStamp}] Synergized content sync for: "${randomBook.title}" by ${randomBook.author} (Downloads: ${randomBook.popularity})`;
+        }
+        
+        scraperLogText.textContent = logMsg;
+    }, 7000);
+}
+
+// Fetch romance books from Gutenberg — multi-topic sweep for 600+ novels
+// We query several overlapping romance-adjacent topics and deduplicate by Gutenberg ID.
+async function fetchGutenbergRomance() {
+    // Each topic yields ~32 books/page. We run multiple topic queries to cross 600+ total.
+    const TOPIC_SWEEPS = [
+        { topic: "romance",                 pages: 10 },
+        { topic: "love+stories",            pages: 6  },
+        { topic: "man-woman+relationships", pages: 5  },
+        { topic: "courtship",               pages: 4  },
+        { topic: "marriage",                pages: 3  },
+    ];
+
+    let totalAdded = 0;
+    let sweepNumber = 0;
+
+    for (const sweep of TOPIC_SWEEPS) {
+        sweepNumber++;
+        for (let page = 1; page <= sweep.pages; page++) {
+        try {
+            scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] Sweep ${sweepNumber}/${TOPIC_SWEEPS.length} · topic="${sweep.topic}" · page ${page}/${sweep.pages} — ${appState.catalog.length} novels loaded`;
+
+            const response = await fetch(`https://gutendex.com/books/?topic=${sweep.topic}&page=${page}`);
+            if (!response.ok) throw new Error(`Page ${page} failed`);
+
+            const data = await response.json();
+            const results = data.results || [];
+
+            results.forEach(book => {
+                const idStr = `gutenberg-${book.id}`;
+                if (appState.scrapedIds.has(idStr)) return;
+
+                const authorObj = book.authors[0] || { name: "Unknown Author", birth_year: null };
+
+                let mappedSubgenre = "Historical";
+                const subjectsJoined = (book.subjects || []).join(' ').toLowerCase();
+                if (subjectsJoined.includes('gothic') || subjectsJoined.includes('ghost') || subjectsJoined.includes('mystery')) {
+                    mappedSubgenre = "Gothic";
+                } else if (subjectsJoined.includes('fantasy') || subjectsJoined.includes('magic') || subjectsJoined.includes('fairy')) {
+                    mappedSubgenre = "Fantasy/Paranormal";
+                } else if (subjectsJoined.includes('science fiction') || subjectsJoined.includes('future')) {
+                    mappedSubgenre = "Sci-Fi";
+                } else if (subjectsJoined.includes('contemporary') || subjectsJoined.includes('modern')) {
+                    mappedSubgenre = "Contemporary";
+                }
+
+                const epubLink = book.formats['application/epub+zip'] || "#";
+                const pdfLink  = book.formats['application/pdf'] || book.formats['text/html'] || "#";
+
+                const generatedSynopsis = `A beautiful classic romance written by ${authorObj.name}. Set in a historical era, it explores themes of courtship, family expectations, and the emotional struggles of love. It remains highly popular, with over ${book.download_count} direct downloads from Project Gutenberg. Listed under: ${book.subjects.slice(0, 3).join(', ')}.`;
+
+                let tropes = ["Classics", "Slow Burn", "Historical Setting"];
+                if (mappedSubgenre === "Gothic") tropes.push("Gothic Secrets", "Dark Secrets");
+                if (mappedSubgenre === "Fantasy/Paranormal") tropes.push("Magical Worlds", "Fate");
+                if (book.languages.includes('fr')) tropes.push("French Classic");
+
+                appState.catalog.push({
+                    id: idStr,
+                    title: book.title,
+                    author: cleanAuthorName(authorObj.name),
+                    year: authorObj.birth_year ? authorObj.birth_year + 30 : 1880,
+                    language: book.languages[0] || "en",
+                    genres: ["Classics", "Historical"],
+                    subgenre: mappedSubgenre,
+                    rating: parseFloat((4.4 + Math.random() * 0.5).toFixed(1)),
+                    popularity: book.download_count || 1200,
+                    pages: Math.floor(200 + Math.random() * 250),
+                    quickHook: `Classic romantic literature. A beautiful story about love and courtship in the 19th century.`,
+                    synopsis: generatedSynopsis,
+                    tropes: tropes,
+                    downloadUrlEpub: epubLink,
+                    downloadUrlPdf: pdfLink,
+                    chapters: [
+                        {
+                            title: "Chapter I: Opening",
+                            content: [
+                                generatedSynopsis,
+                                `"${book.title}" is a classic public domain romance by ${cleanAuthorName(authorObj.name)}, available in full from Project Gutenberg.`,
+                                `Click "Download EPUB" or "Download PDF" to get the complete text — all chapters, all pages.`
+                            ]
+                        }
+                    ]
+                });
+
+                appState.scrapedIds.add(idStr);
+                totalAdded++;
+            });
+
+            // Update live count + grid after every page
+            syncedCount.textContent = appState.catalog.length;
+            renderGenreFilters();
+            filterAndSortBooks();
+
+            // Pause between pages to avoid rate-limiting on the API
+            await new Promise(r => setTimeout(r, 350));
+
+        } catch (error) {
+            console.warn(`Gutenberg sweep ${sweepNumber} page ${page} failed:`, error);
+            scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] Warning: page ${page} unavailable, continuing...`;
+        }
+        } // end page loop
+    } // end sweep loop
+
+    syncedCount.textContent = appState.catalog.length;
+    scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] Full sync complete \u2014 ${appState.catalog.length} romance novels loaded!`;
+    showToast(`Sync complete! ${appState.catalog.length} novels now in your library.`, 'success');
+    // Final refresh to ensure grid shows all synced novels
+    renderGenreFilters();
+    filterAndSortBooks();
+}
+
+// Clean Gutenberg author names (e.g. "Austen, Jane" to "Jane Austen")
+function cleanAuthorName(nameStr) {
+    if (!nameStr) return "Unknown Author";
+    if (nameStr.includes(',')) {
+        const parts = nameStr.split(',');
+        return `${parts[1].trim()} ${parts[0].trim()}`;
+    }
+    return nameStr;
+}
+
+// Simulation of "new novel releases" arriving in real-time
+function startNewReleasesScraperSimulator() {
+    // Every 50 seconds, simulate discovering a new novel release
+    setInterval(() => {
+        const mockNewNovels = [
+            {
+                title: "A Scandalous Liaison",
+                author: "Penelope Sterling",
+                subgenre: "Historical",
+                quickHook: "A secret identity, a stolen correspondence, and a passionate forbidden romance in Regency Bath.",
+                synopsis: "When Lady Beatrice receives a letters pouch meant for the notorious Duke of Westmorland, she discovers a shocking secret. Rather than return the correspondence, she begins an anonymous pen-pal courtship with the brooding nobleman. As the letters grow increasingly intimate, they agree to meet at a masquerade ball, unaware that their real-world identities make their union completely impossible.",
+                tropes: ["Secret Identity", "Regency Courtship", "Forbidden Love", "Pen Pals"]
+            },
+            {
+                title: "Shadows and Silk",
+                author: "Victor Graves",
+                subgenre: "Gothic",
+                quickHook: "A haunted mansion, a reclusive billionaire artist, and a tutor who uncovers dangerous desires.",
+                synopsis: "Isla is hired to catalog the private library of Thorne Manor, a crumbling estate overlooking the Atlantic. The owner, Julian Thorne, is a brilliant artist who has refused to show his face since a fire five years ago. Living in the shadows of the mansion, Isla begins to notice strange phenomena—and realizes Julian is hiding a powerful mystery that draws her in.",
+                tropes: ["Gothic Secrets", "Beauty and the Beast", "Dark Romance", "Reclusive Hero"]
+            },
+            {
+                title: "Written in the Stars",
+                author: "Nova Vance",
+                subgenre: "Sci-Fi",
+                quickHook: "An astronaut and an alien cartographer stranded on a crystal planet must rely on each other.",
+                synopsis: "Stranded on a beautiful but volatile crystalline planet, Captain Elena Vane is forced to form an alliance with Jax, a quiet cartographer from a rival star system. As they traverse the glowing landscape to reach an escape pod, their political differences fade under the pressure of survival, igniting a cosmic passion that defies interstellar laws.",
+                tropes: ["Star Crossed", "Forced Proximity", "Sci-Fi Setting", "Opposites Attract"]
+            }
+        ];
+        
+        // Select a random mock book
+        const selectedMock = mockNewNovels[Math.floor(Math.random() * mockNewNovels.length)];
+        const idStr = `mock-${Date.now()}`;
+        
+        // Append to catalog
+        appState.catalog.unshift({
+            id: idStr,
+            title: selectedMock.title,
+            author: selectedMock.author,
+            year: 2026,
+            language: "en",
+            genres: ["New Releases", "Romance"],
+            subgenre: selectedMock.subgenre,
+            rating: 4.8,
+            popularity: 8500,
+            pages: 320,
+            quickHook: selectedMock.quickHook,
+            synopsis: selectedMock.synopsis,
+            tropes: [...selectedMock.tropes, "New Release"],
+            downloadUrlEpub: "#",
+            downloadUrlPdf: "#",
+            chapters: [
+                {
+                    title: "Chapter 1: The Encounter",
+                    content: [
+                        "The rain hit the glass panels of the greenhouse in a rhythmic, comforting patter. She held the lantern high, its amber glow illuminating the damp ferns.",
+                        "“You shouldn't be out here at this hour,” a deep voice said from the shadows. She gasped, turning. He stepped into the light, water dripping from his dark hair, looking at her with an intensity that made her catch her breath.",
+                        "It was him. The one person she had been warned to avoid at all costs. The one person she couldn't stop thinking about."
+                    ]
+                }
+            ]
+        });
+        
+        // Update count & log
+        syncedCount.textContent = appState.catalog.length;
+        scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] [AUTO-SYNCED] Discovered new release: "${selectedMock.title}" by ${selectedMock.author} - Loaded into ${selectedMock.subgenre} shelf.`;
+        
+        showToast(`New romance release synced: "${selectedMock.title}"!`, 'success');
+        
+        // Re-render
+        renderGenreFilters();
+        filterAndSortBooks();
+        
+    }, 55000);
+}
+
+// ----------------------------------------------------
+// 6. RENDER HERO Spotlight Romance
+// ----------------------------------------------------
+function renderHeroSpotlight() {
+    const featured = appState.catalog.find(b => b.id === "pride-and-prejudice") || appState.catalog[0];
+    if (!featured) return;
+    
+    heroTitle.textContent = featured.title;
+    heroCoverTitle.textContent = featured.title;
+    heroCoverAuthor.textContent = featured.author;
+    
+    // Star ratings
+    let starsHtml = '';
+    const roundedRating = Math.round(featured.rating);
+    for (let i = 1; i <= 5; i++) {
+        starsHtml += i <= roundedRating ? '★' : '☆';
+    }
+    heroRatingStars.innerHTML = starsHtml;
+    heroRatingNumber.textContent = featured.rating;
+    
+    heroReleaseYear.textContent = featured.year;
+    heroLanguage.textContent = featured.language.toUpperCase();
+    heroPages.textContent = `${featured.pages} pgs`;
+    heroDescription.textContent = featured.synopsis.substring(0, 180) + '...';
+    
+    // Trope pills
+    heroGenres.innerHTML = '';
+    featured.tropes.slice(0, 3).forEach(t => {
+        const pill = document.createElement('span');
+        pill.className = 'genre-pill';
+        pill.textContent = t;
+        heroGenres.appendChild(pill);
+    });
+    
+    // Connect buttons
+    heroReadBtn.onclick = () => openReader(featured.id);
+    heroDetailsBtn.onclick = () => openBookModal(featured.id);
+}
+
+// ----------------------------------------------------
+// 7. SIDEBAR Subgenre Filter Counts
+// ----------------------------------------------------
+function renderGenreFilters() {
+    const subgenres = ["All", "Historical", "Contemporary", "Fantasy/Paranormal", "Gothic", "Sci-Fi"];
+    
+    // Calculate counts
+    const counts = { "All": appState.catalog.length };
+    subgenres.forEach(g => { counts[g] = 0; });
+    
+    appState.catalog.forEach(book => {
+        if (counts[book.subgenre] !== undefined) {
+            counts[book.subgenre]++;
+        }
+    });
+    
+    genreFilterList.innerHTML = '';
+    
+    subgenres.forEach(genre => {
+        const isActive = appState.activeSubgenreFilter === genre;
+        const btn = document.createElement('button');
+        btn.className = `filter-btn-row ${isActive ? 'active' : ''}`;
+        btn.innerHTML = `
+            <span>${genre === 'All' ? 'All Romance' : genre}</span>
+            <span class="filter-count">${counts[genre]}</span>
+        `;
+        
+        btn.onclick = () => {
+            document.querySelectorAll('.filter-btn-row').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            appState.activeSubgenreFilter = genre;
+            filterAndSortBooks();
+        };
+        
+        genreFilterList.appendChild(btn);
+    });
+}
+
+// ----------------------------------------------------
+// 8. RENDER Library Book Grid
+// ----------------------------------------------------
+function renderBookGrid(books) {
+    bookGrid.innerHTML = '';
+    resultsCount.textContent = `(${books.length})`;
+    
+    if (books.length === 0) {
+        bookGrid.innerHTML = `
+            <div class="empty-state" style="grid-column: 1 / -1;">
+                <div class="empty-state-icon">🥀</div>
+                <h3>No Romances Found</h3>
+                <p>We couldn't find any books matching your criteria. Try looking for other terms or clear your search.</p>
+                <button class="btn-secondary" id="clearSearchBtnGrid">Clear Search</button>
+            </div>
+        `;
+        document.getElementById('clearSearchBtnGrid').onclick = () => {
+            searchInput.value = '';
+            searchClearBtn.style.display = 'none';
+            appState.searchQuery = '';
+            filterAndSortBooks();
+        };
+        return;
+    }
+    
+    books.forEach(book => {
+        const card = document.createElement('div');
+        card.className = 'book-card glass-panel';
+        
+        // Ratings Stars
+        let stars = '';
+        const ratingRounded = Math.round(book.rating);
+        for (let i = 1; i <= 5; i++) {
+            stars += i <= ratingRounded ? '★' : '☆';
+        }
+        
+        // Custom background styling for book covers
+        let coverBg = "linear-gradient(135deg, #1e0a12 0%, #000 100%)"; // Gothic/Dark Burgundy
+        if (book.subgenre === "Fantasy/Paranormal") {
+            coverBg = "linear-gradient(135deg, #2d0b2e 0%, #09030a 100%)"; // Deep Amethyst
+        } else if (book.subgenre === "Contemporary") {
+            coverBg = "linear-gradient(135deg, #e04a74 0%, #4a0f20 100%)"; // Rose Crimson
+        } else if (book.subgenre === "Historical") {
+            coverBg = "linear-gradient(135deg, #3a2215 0%, #150904 100%)"; // Warm Antique Brown
+        } else if (book.subgenre === "Sci-Fi") {
+            coverBg = "linear-gradient(135deg, #0f172a 0%, #020617 100%)"; // Galactic Indigo
+        }
+        
+        const badgeText = book.popularity > 100000 ? "Best Seller" : book.rating >= 4.8 ? "Highly Rated" : "New release";
+        const badgeColor = badgeText === 'Best Seller' ? 'var(--gold)' : 'var(--accent)';
+        const badgeTextCol = badgeText === 'Best Seller' ? '#000' : '#fff';
+        
+        card.innerHTML = `
+            <div class="card-cover-wrapper">
+                <div class="card-cover" style="background: ${coverBg};">
+                    <div class="cover-design">
+                        <span class="cover-badge" style="background: ${badgeColor}; color: ${badgeTextCol};">${badgeText}</span>
+                        <div class="card-title-mini">${book.title}</div>
+                        <div>
+                            <div class="card-author-mini">${book.author}</div>
+                            <div style="height: 3px; width: 35px; background: var(--accent); border-radius: 9px; margin: 4px auto 0;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-info">
+                <div>
+                    <div class="card-meta-row">
+                        <div class="rating-badge">${stars} <span>${book.rating}</span></div>
+                        <span class="lang-badge">${book.language.toUpperCase()}</span>
+                    </div>
+                    <h3 class="card-title">${book.title}</h3>
+                    <p class="card-author">by ${book.author}</p>
+                    <p class="card-hook">${book.quickHook}</p>
+                </div>
+                
+                <div>
+                    <div class="card-genres">
+                        ${book.tropes.slice(0, 3).map(t => `<span class="card-genre-tag">${t}</span>`).join('')}
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn-card-primary" onclick="event.stopPropagation(); openBookModal('${book.id}')">Quick View</button>
+                        <button class="btn-card-secondary" onclick="event.stopPropagation(); toggleSaveFromGrid('${book.id}', this)">
+                            ${appState.bookshelf.includes(book.id) ? 'Saved' : '♥ Lovelist'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        card.onclick = () => openBookModal(book.id);
+        bookGrid.appendChild(card);
+    });
+}
+
+function toggleSaveFromGrid(id, btn) {
+    const isSaved = toggleSaveBook(id);
+    btn.textContent = isSaved ? 'Saved' : '♥ Lovelist';
+}
+
+// ----------------------------------------------------
+// 9. SMART SEARCH, FILTERS & SORT
+// ----------------------------------------------------
+function filterAndSortBooks() {
+    const query = searchInput.value.trim().toLowerCase();
+    const selectedSubgenre = appState.activeSubgenreFilter;
+    const selectedSort = sortBySelect.value;
+    const selectedLang = langSelect.value;
+    
+    let filtered = [...appState.catalog];
+    
+    // Search filter
+    if (query) {
+        const tokens = query.split(/\s+/).filter(t => t.length > 0);
+        
+        filtered = filtered.filter(book => {
+            return tokens.every(token => {
+                return book.title.toLowerCase().includes(token) ||
+                       book.author.toLowerCase().includes(token) ||
+                       book.subgenre.toLowerCase().includes(token) ||
+                       book.synopsis.toLowerCase().includes(token) ||
+                       book.tropes.some(t => t.toLowerCase().includes(token));
+            });
+        });
+    }
+    
+    // Subgenre filter (only if search is empty)
+    if (selectedSubgenre !== 'All' && !query) {
+        filtered = filtered.filter(book => book.subgenre === selectedSubgenre);
+    }
+    
+    // Language dropdown filter
+    if (selectedLang !== 'all') {
+        filtered = filtered.filter(book => book.language.toLowerCase() === selectedLang.toLowerCase());
+    }
+    
+    // Sorting logic
+    if (selectedSort === 'popularity') {
+        filtered.sort((a, b) => b.popularity - a.popularity);
+    } else if (selectedSort === 'rating') {
+        filtered.sort((a, b) => b.rating - a.rating);
+    } else if (selectedSort === 'year') {
+        filtered.sort((a, b) => b.year - a.year);
+    }
+    
+    // Update Heading Text
+    if (query) {
+        feedHeading.innerHTML = `Search Results for "${searchInput.value}" <span id="resultsCount">(${filtered.length})</span>`;
+    } else if (selectedSubgenre !== 'All') {
+        feedHeading.innerHTML = `${selectedSubgenre} Romance <span id="resultsCount">(${filtered.length})</span>`;
+    } else {
+        feedHeading.innerHTML = `Romance Library <span id="resultsCount">(${filtered.length})</span>`;
+    }
+    
+    renderBookGrid(filtered);
+}
+
+// ----------------------------------------------------
+// 10. BOOK LOVELIST (BOOKMARKS)
+// ----------------------------------------------------
+function toggleSaveBook(id) {
+    const idx = appState.bookshelf.indexOf(id);
+    let isSaved = false;
+    
+    if (idx === -1) {
+        appState.bookshelf.push(id);
+        isSaved = true;
+        showToast("Book added to your Romance Lovelist", "success");
+    } else {
+        appState.bookshelf.splice(idx, 1);
+        showToast("Book removed from your Lovelist", "info");
+    }
+    
+    saveBookshelf();
+    
+    // Update active modal button state if open
+    if (appState.currentBook && appState.currentBook.id === id) {
+        updateModalShelfBtnState();
+    }
+    
+    // If bookshelf modal is open, re-render list
+    if (bookshelfModal.classList.contains('active')) {
+        renderBookshelfList();
+    }
+    
+    // Sync grid buttons
+    filterAndSortBooks();
+    
+    return isSaved;
+}
+
+function updateModalShelfBtnState() {
+    if (appState.bookshelf.includes(appState.currentBook.id)) {
+        modalShelfBtn.textContent = "Saved in LoveList";
+        modalShelfBtn.className = "btn-secondary";
+        modalShelfBtn.style.borderColor = "var(--accent)";
+    } else {
+        modalShelfBtn.textContent = "♥ Add to LoveList";
+        modalShelfBtn.className = "btn-primary";
+        modalShelfBtn.style.borderColor = "transparent";
+    }
+}
+
+function renderBookshelfList() {
+    bookshelfList.innerHTML = '';
+    
+    if (appState.bookshelf.length === 0) {
+        bookshelfList.innerHTML = `
+            <div class="empty-state">
+                <div style="font-size: 2.5rem; margin-bottom: 5px;">💔</div>
+                <p>Your Lovelist is empty. Save some romantic books to read later!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    appState.bookshelf.forEach(id => {
+        const book = appState.catalog.find(b => b.id === id);
+        if (!book) return;
+        
+        const item = document.createElement('div');
+        item.className = 'bookshelf-item';
+        
+        let coverBg = "linear-gradient(135deg, #1e0a12 0%, #000 100%)";
+        if (book.subgenre === "Fantasy/Paranormal") coverBg = "linear-gradient(135deg, #2d0b2e 0%, #09030a 100%)";
+        if (book.subgenre === "Contemporary") coverBg = "linear-gradient(135deg, #e04a74 0%, #4a0f20 100%)";
+        
+        item.innerHTML = `
+            <div class="bookshelf-cover" style="background: ${coverBg}">
+                <span style="font-size: 0.55rem; line-height: 1.2;">${book.title}</span>
+            </div>
+            <div class="bookshelf-info">
+                <span class="bookshelf-title">${book.title}</span>
+                <span class="bookshelf-author">by ${book.author}</span>
+            </div>
+            <button class="btn-remove-shelf" onclick="event.stopPropagation(); toggleSaveBook('${book.id}')" title="Remove from Lovelist">
+                <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+            </button>
+        `;
+        
+        item.onclick = () => {
+            closeModal(bookshelfModal);
+            openBookModal(book.id);
+        };
+        bookshelfList.appendChild(item);
+    });
+}
+
+// ----------------------------------------------------
+// 11. NOVEL DETAILS MODAL & SIMULATIVE DOWNLOAD
+// ----------------------------------------------------
+function openBookModal(id) {
+    const book = appState.catalog.find(b => b.id === id);
+    if (!book) return;
+    
+    appState.currentBook = book;
+    
+    modalTitle.textContent = book.title;
+    modalAuthor.textContent = `by ${book.author}`;
+    modalCoverTitle.textContent = book.title;
+    modalCoverAuthor.textContent = book.author;
+    
+    // Set dynamic cover color
+    let coverBg = "linear-gradient(135deg, #1e0a12 0%, #000 100%)";
+    if (book.subgenre === "Fantasy/Paranormal") coverBg = "linear-gradient(135deg, #2d0b2e 0%, #09030a 100%)";
+    if (book.subgenre === "Contemporary") coverBg = "linear-gradient(135deg, #e04a74 0%, #4a0f20 100%)";
+    if (book.subgenre === "Historical") coverBg = "linear-gradient(135deg, #3a2215 0%, #150904 100%)";
+    if (book.subgenre === "Sci-Fi") coverBg = "linear-gradient(135deg, #0f172a 0%, #020617 100%)";
+    modalCover.style.background = coverBg;
+    
+    modalCoverBadge.textContent = book.subgenre;
+    modalStatReleased.textContent = book.year;
+    modalStatLanguage.textContent = book.language.toUpperCase();
+    modalStatDownloads.textContent = book.popularity.toLocaleString();
+    modalStatRating.textContent = `${book.rating} / 5`;
+    modalSynopsis.textContent = book.synopsis;
+    
+    // Render tropes tags
+    modalThemes.innerHTML = '';
+    book.tropes.forEach(theme => {
+        const tag = document.createElement('span');
+        tag.className = 'theme-tag';
+        tag.textContent = theme;
+        modalThemes.appendChild(tag);
+    });
+    
+    // Render Reviews
+    renderReviews(book.id);
+    
+    // Update Shelf button state
+    updateModalShelfBtnState();
+    
+    // Setup modal actions
+    modalReadBtn.onclick = () => {
+        closeModal(bookDetailsModal);
+        openReader(book.id);
+    };
+    
+    modalShelfBtn.onclick = () => {
+        toggleSaveBook(book.id);
+    };
+    
+    // EPUB and PDF download setup
+    modalDownloadEpub.onclick = () => startSmartDownload(book, 'EPUB');
+    modalDownloadPdf.onclick  = () => startSmartDownload(book, 'PDF');
+    
+    // Hide download progress on start
+    downloadProgressContainer.style.display = 'none';
+    downloadProgressFill.style.style = "0%";
+    
+    openModal(bookDetailsModal);
+}
+
+// ── Smart Download Router ──────────────────────────────────────────────────
+// Strategy:
+//   EPUB  → open real Gutenberg EPUB link, else generate mock text file.
+//   PDF   → if Gutenberg book: try proxy fetch for full-text PDF, fallback to
+//            opening the direct Gutenberg PDF URL in a new tab (all pages).
+//           if Google Books / mock: open Google Books link or generate preview PDF.
+function startSmartDownload(book, format) {
+    // ── EPUB branch ──────────────────────────────────────────────────────────
+    if (format === 'EPUB') {
+        const hasRealEpub = book.downloadUrlEpub && book.downloadUrlEpub !== '#';
+        if (hasRealEpub) {
+            window.open(book.downloadUrlEpub, '_blank');
+            showToast(`Opening EPUB for "${book.title}" from Gutenberg!`, 'success');
+        } else {
+            generateMockEpubFile(book);
+        }
+        return;
+    }
+
+    // ── PDF branch ───────────────────────────────────────────────────────────
+    // Step 1: resolve the Gutenberg numeric ID from any available source
+    let gutenbergId = null;
+
+    if (book.id.startsWith('gutenberg-')) {
+        gutenbergId = book.id.split('-')[1];
+    } else if (book.downloadUrlPdf && book.downloadUrlPdf.includes('gutenberg.org/files/')) {
+        // e.g. https://www.gutenberg.org/files/1342/1342-pdf.pdf
+        const m = book.downloadUrlPdf.match(/\/files\/(\d+)\//);
+        if (m) gutenbergId = m[1];
+    } else if (book.downloadUrlEpub && book.downloadUrlEpub.includes('gutenberg.org/ebooks/')) {
+        // e.g. https://www.gutenberg.org/ebooks/1342.epub.images
+        const m = book.downloadUrlEpub.match(/\/ebooks\/(\d+)/);
+        if (m) gutenbergId = m[1];
+    }
+
+    if (gutenbergId) {
+        // Step 2a: Gutenberg book — try full-text proxy download, fallback to
+        //          direct PDF URL (complete book, all pages, no truncation)
+        downloadFullGutenbergPDF({ ...book, _gutenbergId: gutenbergId });
+    } else if (book.googleBooksLink) {
+        // Step 2b: Google Books novel — open its preview/info page
+        window.open(book.googleBooksLink, '_blank');
+        showToast(`Opening "${book.title}" on Google Books!`, 'success');
+    } else {
+        // Step 2c: Mock/unknown — generate a styled preview PDF
+        generateRealPDF(book);
+    }
+}
+
+function startSimulatedDownload(book, format) {
+    const isMock = book.downloadUrlEpub === '#' || book.downloadUrlPdf === '#';
+    const targetUrl = format === 'EPUB' ? book.downloadUrlEpub : book.downloadUrlPdf;
+    
+    // Show download container
+    downloadProgressContainer.style.display = 'flex';
+    downloadStatusText.textContent = `Establishing link for ${format}...`;
+    downloadProgressPercentage.textContent = '0%';
+    downloadProgressFill.style.width = '0%';
+    
+    let progress = 0;
+    const downloadSteps = [
+        `Contacting library host...`,
+        `Authorizing secure transfer...`,
+        `Assembling ${format} metadata...`,
+        `Writing book files...`,
+        `Finalizing payload...`
+    ];
+    
+    const interval = setInterval(() => {
+        progress += Math.floor(Math.random() * 15) + 5;
+        if (progress > 100) progress = 100;
+        
+        downloadProgressPercentage.textContent = `${progress}%`;
+        downloadProgressFill.style.width = `${progress}%`;
+        
+        const stepIndex = Math.min(Math.floor(progress / 20), downloadSteps.length - 1);
+        downloadStatusText.textContent = downloadSteps[stepIndex];
+        
+        if (progress === 100) {
+            clearInterval(interval);
+            setTimeout(() => {
+                downloadProgressContainer.style.display = 'none';
+                showToast(`${format} Download Completed for "${book.title}"!`, "success");
+                
+                if (format === 'PDF') {
+                    // Generate and download a real PDF file client-side using jsPDF
+                    try {
+                        generateRealPDF(book);
+                    } catch (e) {
+                        console.error("PDF Generation failed:", e);
+                        showToast(`PDF generation error. Attempting print window...`, 'warning');
+                        window.print();
+                    }
+                } else {
+                    // EPUB handler
+                    if (!isMock && targetUrl !== '#') {
+                        window.open(targetUrl, '_blank');
+                    } else {
+                        // For mock EPUB, we can generate a mock epub text file
+                        generateMockEpubFile(book);
+                    }
+                }
+            }, 500);
+        }
+    }, 150);
+}
+
+// Function to generate a real PDF using jsPDF
+function generateRealPDF(book) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // Page margins & dimensions
+    const margin = 20;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const contentWidth = pageWidth - (margin * 2);
+    
+    // Theme Colors
+    const primaryColor = [30, 10, 18]; // Velvet Burgundy
+    const secondaryColor = [212, 175, 55]; // Gold
+    const accentColor = [224, 74, 116]; // Rose
+    
+    // Cover/Header Page Design
+    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.rect(0, 0, pageWidth, 55, 'F');
+    
+    // Header text
+    doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+    doc.setFont("times", "italic");
+    doc.setFontSize(26);
+    doc.text("Lovestruck Hub", pageWidth / 2, 25, { align: "center" });
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(255, 255, 255);
+    doc.text("PREMIUM ESCAPE ROMANCE NOVELS PREVIEW", pageWidth / 2, 38, { align: "center" });
+    
+    // Book Meta Title
+    doc.setTextColor(0, 0, 0);
+    doc.setFont("times", "bold");
+    doc.setFontSize(28);
+    doc.text(book.title, margin, 75);
+    
+    doc.setFont("times", "italic");
+    doc.setFontSize(16);
+    doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
+    doc.text(`by ${book.author}`, margin, 85);
+    
+    // Line divider
+    doc.setDrawColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+    doc.setLineWidth(0.8);
+    doc.line(margin, 90, pageWidth - margin, 90);
+    
+    // Stats Block
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(50, 50, 50);
+    doc.text("NOVEL SPECIFICATIONS:", margin, 102);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`* Subgenre Category:  ${book.subgenre} Romance`, margin, 110);
+    doc.text(`* Author/Creator:     ${book.author}`, margin, 116);
+    doc.text(`* Publication Year:   ${book.year}`, margin, 122);
+    doc.text(`* Reader Rating:      ${book.rating} / 5 Hearts`, margin, 128);
+    doc.text(`* Lovestruck ID:      ${book.id}`, margin, 134);
+    
+    // Box surround stats
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.3);
+    doc.rect(margin - 4, 96, contentWidth + 8, 43);
+    
+    // Synopsis
+    doc.setFont("times", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.text("SYNOPSIS & BACK COVER SUMMARY:", margin, 153);
+    
+    doc.setFont("times", "normal");
+    doc.setFontSize(11);
+    doc.setTextColor(30, 30, 30);
+    
+    const synopsisLines = doc.splitTextToSize(book.synopsis, contentWidth);
+    doc.text(synopsisLines, margin, 160);
+    
+    // Trope Tags
+    let nextY = 160 + (synopsisLines.length * 6) + 10;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
+    doc.text(`Themes & Vibes: ${book.tropes.join("  |  ")}`, margin, nextY);
+
+    if (book.googleBooksLink) {
+        nextY += 10;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.text("Read Full Novel Online (Google Books):", margin, nextY);
+        
+        nextY += 6;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(0, 0, 255);
+        doc.text(book.googleBooksLink, margin, nextY);
+    }
+    
+    // Add Chapter 1 Preview
+    if (book.chapters && book.chapters.length > 0) {
+        doc.addPage();
+        
+        // Page header for subsequent page
+        doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.rect(0, 0, pageWidth, 15, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("times", "italic");
+        doc.setFontSize(10);
+        doc.text(`Lovestruck Hub  |  ${book.title} Preview`, margin, 10);
+        
+        let writeY = 32;
+        doc.setFont("times", "bold");
+        doc.setFontSize(18);
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.text(book.chapters[0].title, margin, writeY);
+        
+        writeY += 10;
+        doc.setFont("times", "normal");
+        doc.setFontSize(11);
+        doc.setTextColor(40, 40, 40);
+        
+        const previewText = book.chapters[0].content.join("\n\n");
+        const chapterLines = doc.splitTextToSize(previewText, contentWidth);
+        
+        // Page breaking loop for long chapters
+        let linesWritten = 0;
+        const lineSpacing = 6;
+        
+        while (linesWritten < chapterLines.length) {
+            const spaceLeft = pageHeight - writeY - margin;
+            const linesThatFit = Math.floor(spaceLeft / lineSpacing);
+            
+            if (linesThatFit <= 0) {
+                doc.addPage();
+                // Sub-page header
+                doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+                doc.rect(0, 0, pageWidth, 15, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFont("times", "italic");
+                doc.setFontSize(10);
+                doc.text(`Lovestruck Hub  |  ${book.title} Preview`, margin, 10);
+                
+                writeY = 30;
+                continue;
+            }
+            
+            const chunk = chapterLines.slice(linesWritten, linesWritten + linesThatFit);
+            doc.text(chunk, margin, writeY);
+            
+            linesWritten += chunk.length;
+            writeY += chunk.length * lineSpacing;
+        }
+    }
+    
+    // Save file PDF trigger
+    const fileTitle = book.title.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    doc.save(`lovestruck_${fileTitle}_preview.pdf`);
+}
+
+// Function to generate a mock EPUB file client-side
+function generateMockEpubFile(book) {
+    const title = book.title;
+    const author = book.author;
+    const bodyText = `
+Lovestruck Hub - Premium Romance eBook
+=====================================
+Title: ${title}
+Author: ${author}
+Subgenre: ${book.subgenre}
+Year: ${book.year}
+Tropes: ${book.tropes.join(', ')}
+
+Synopsis:
+${book.synopsis}
+
+Preview Chapters:
+${book.chapters.map(c => `${c.title}\n----------------\n${c.content.join('\n\n')}`).join('\n\n')}
+
+-------------------------------------
+Generated dynamically by Lovestruck Hub. Downloaded as simulated EPUB file content.
+`;
+    
+    const blob = new Blob([bodyText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_ebook.epub`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showToast(`EPUB file downloaded to your system!`, 'success');
+}
+
+function renderReviews(bookId) {
+    modalReviewsList.innerHTML = '';
+    const bookReviews = appState.reviews[bookId] || [];
+    
+    if (bookReviews.length === 0) {
+        modalReviewsList.innerHTML = `
+            <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">No reviews yet. Be the first to express your love for this book!</p>
+        `;
+        return;
+    }
+    
+    bookReviews.forEach(r => {
+        const item = document.createElement('div');
+        item.className = 'review-card';
+        
+        let hearts = '';
+        for (let i = 1; i <= 5; i++) {
+            hearts += i <= r.rating ? '♥' : '♡';
+        }
+        
+        item.innerHTML = `
+            <div class="review-header">
+                <span class="review-author">${r.author}</span>
+                <span class="review-rating">${hearts}</span>
+            </div>
+            <p class="review-text">${r.text}</p>
+        `;
+        
+        modalReviewsList.appendChild(item);
+    });
+}
+
+function postReview() {
+    const authorInput = document.getElementById('reviewAuthorInput');
+    const ratingInput = document.getElementById('reviewRatingInput');
+    const textInput = document.getElementById('reviewTextInput');
+    
+    const author = authorInput.value.trim();
+    const rating = parseInt(ratingInput.value);
+    const text = textInput.value.trim();
+    
+    if (!author || !text) return;
+    
+    const bookId = appState.currentBook.id;
+    if (!appState.reviews[bookId]) {
+        appState.reviews[bookId] = [];
+    }
+    
+    appState.reviews[bookId].unshift({ author, rating, text });
+    saveReviews();
+    
+    // Reset form
+    authorInput.value = '';
+    textInput.value = '';
+    
+    // Re-render
+    renderReviews(bookId);
+    showToast("Thank you! Review posted successfully.", "success");
+}
+
+// ----------------------------------------------------
+// 12. E-READER PREVIEW ENGINE
+// ----------------------------------------------------
+
+// Splits a large plain-text string into an array of chapter objects
+// by detecting "CHAPTER" or "Chapter" headings in the text.
+// Returns at most `maxChapters` chapters (default 2 for preview).
+function extractChaptersFromText(fullText, maxChapters = 2) {
+    // Split on lines that look like chapter headings
+    const chapterRegex = /^(CHAPTER\s+[IVXLCDM\d]+|Chapter\s+[IVXLCDM\d]+\.?)/im;
+    const lines = fullText.split(/\r?\n/);
+
+    const chapters = [];
+    let currentTitle = "Chapter I";
+    let currentLines = [];
+
+    for (const line of lines) {
+        if (chapterRegex.test(line.trim()) && line.trim().length < 80) {
+            // Save previous chapter if it has content
+            if (currentLines.length > 10) {
+                chapters.push({ title: currentTitle, content: buildParagraphs(currentLines) });
+                if (chapters.length >= maxChapters) break;
+            }
+            currentTitle = line.trim();
+            currentLines = [];
+        } else {
+            currentLines.push(line);
+        }
+    }
+
+    // Add last accumulated chapter if we didn't hit maxChapters
+    if (chapters.length < maxChapters && currentLines.length > 10) {
+        chapters.push({ title: currentTitle, content: buildParagraphs(currentLines) });
+    }
+
+    return chapters;
+}
+
+// Joins consecutive non-empty lines into paragraph strings (≈ 300 chars each)
+function buildParagraphs(lines) {
+    const paragraphs = [];
+    let para = "";
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed === "") {
+            if (para.trim().length > 30) {
+                paragraphs.push(para.trim());
+                para = "";
+            }
+        } else {
+            para += (para ? " " : "") + trimmed;
+        }
+    }
+    if (para.trim().length > 30) paragraphs.push(para.trim());
+    return paragraphs.slice(0, 60); // keep up to 60 paragraphs per chapter
+}
+
+function openReader(bookId) {
+    const book = appState.catalog.find(b => b.id === bookId);
+    if (!book) return;
+
+    appState.currentReadingBook = book;
+    appState.currentChapterIndex = 0;
+
+    readerBookTitle.textContent = book.title;
+    readerBookAuthor.textContent = `by ${book.author}`;
+
+    // For Gutenberg books that only have a stub chapter, fetch real text live
+    const isGutenberg = book.id.startsWith('gutenberg-');
+    const hasRealChapters = book.chapters && book.chapters.length >= 2 &&
+        book.chapters[0].content && book.chapters[0].content.length > 5;
+
+    if (isGutenberg && !hasRealChapters) {
+        // Show loading state inside reader first
+        openModal(readerModal);
+        readerTextContent.innerHTML = `
+            <div style="text-align:center; padding: 3rem 1rem; color: var(--text-muted);">
+                <div style="font-size:2rem; margin-bottom:1rem;">📖</div>
+                <p style="font-family: var(--font-serif); font-size:1.1rem;">Fetching preview chapters...</p>
+                <p style="font-size:0.82rem; margin-top:0.5rem;">Loading from Project Gutenberg</p>
+            </div>`;
+        readerProgressText.textContent = "Loading...";
+        readerProgressBarFill.style.width = "0%";
+        readerPrevBtn.disabled = true;
+        readerNextBtn.disabled = true;
+
+        const gutId = book.id.split('-')[1];
+        const textUrl = `https://www.gutenberg.org/cache/epub/${gutId}/pg${gutId}.txt`;
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(textUrl)}`;
+
+        fetch(proxyUrl)
+            .then(r => { if (!r.ok) throw new Error("proxy failed"); return r.text(); })
+            .then(fullText => {
+                const chapters = extractChaptersFromText(fullText, 2);
+                if (chapters.length === 0) throw new Error("no chapters parsed");
+                book.chapters = chapters; // cache onto the book object
+                renderReaderContent();
+            })
+            .catch(() => {
+                // Fallback: show synopsis + link to Gutenberg
+                book.chapters = [{
+                    title: "Preview Unavailable",
+                    content: [
+                        book.synopsis,
+                        `To read this book in full, visit the Project Gutenberg page:`,
+                        `https://www.gutenberg.org/ebooks/${gutId}`
+                    ]
+                }];
+                renderReaderContent();
+                showToast("Live preview blocked — showing synopsis instead.", "warning");
+            });
+    } else {
+        renderReaderContent();
+        openModal(readerModal);
+    }
+}
+
+function renderReaderContent() {
+    const book = appState.currentReadingBook;
+    const chapters = book.chapters || [];
+    
+    if (chapters.length === 0) {
+        readerTextContent.innerHTML = `
+            <div style="text-align:center; padding:3rem 1rem; color:var(--text-muted);">
+                <div style="font-size:2rem; margin-bottom:1rem;">📚</div>
+                <p style="font-family:var(--font-serif);">No preview available.</p>
+                <p style="font-size:0.82rem; margin-top:0.5rem;">Download the full book to read it.</p>
+            </div>`;
+        readerProgressText.textContent = `Preview unavailable`;
+        readerProgressBarFill.style.width = '0%';
+        return;
+    }
+    
+    const currentChapter = chapters[appState.currentChapterIndex];
+    const totalChapters = chapters.length;
+    
+    let textHtml = `
+        <div style="text-align:center; margin-bottom:1.5rem;">
+            <span style="font-size:0.72rem; letter-spacing:0.12em; color:var(--accent); text-transform:uppercase; font-family:var(--font-sans);">
+                Preview — Chapter ${appState.currentChapterIndex + 1} of ${totalChapters}
+            </span>
+            <h2 style="font-family:var(--font-serif); margin-top:0.4rem; font-size:1.35rem; line-height:1.3;">${currentChapter.title}</h2>
+            <div style="width:50px; height:2px; background:var(--accent); margin:0.75rem auto 0;"></div>
+        </div>`;
+
+    (currentChapter.content || []).forEach(para => {
+        textHtml += `<p style="font-size:${appState.currentFontSize}rem; margin-bottom:1.1em; line-height:1.75;">${para}</p>`;
+    });
+
+    // If last chapter, show a "download full book" nudge
+    if (appState.currentChapterIndex === totalChapters - 1) {
+        textHtml += `
+            <div style="margin-top:2.5rem; padding:1.5rem; border:1px solid var(--border-color);
+                        border-radius:var(--radius-md); text-align:center; background:var(--accent-glow);">
+                <p style="font-family:var(--font-serif); font-size:1rem; color:var(--text-primary); margin-bottom:0.5rem;">
+                    Enjoying the preview?
+                </p>
+                <p style="font-size:0.82rem; color:var(--text-muted);">
+                    Download the full book (PDF) to read every page.
+                </p>
+            </div>`;
+    }
+    
+    readerTextContent.innerHTML = textHtml;
+    
+    const progressPercent = ((appState.currentChapterIndex + 1) / totalChapters) * 100;
+    readerProgressBarFill.style.width = `${progressPercent}%`;
+    readerProgressText.textContent = `Preview Chapter ${appState.currentChapterIndex + 1} of ${totalChapters}`;
+    
+    readerPrevBtn.disabled = appState.currentChapterIndex === 0;
+    readerNextBtn.disabled = appState.currentChapterIndex === totalChapters - 1;
+}
+
+function readerNextChapter() {
+    if (appState.currentChapterIndex < appState.currentReadingBook.chapters.length - 1) {
+        appState.currentChapterIndex++;
+        renderReaderContent();
+        readerBody.scrollTop = 0;
+    }
+}
+
+function readerPrevChapter() {
+    if (appState.currentChapterIndex > 0) {
+        appState.currentChapterIndex--;
+        renderReaderContent();
+        readerBody.scrollTop = 0;
+    }
+}
+
+// Adjust reader styling settings
+function toggleReaderFont() {
+    if (appState.readerFont === 'reader-text-serif') {
+        appState.readerFont = 'reader-text-sans';
+        readerFontToggle.textContent = 'Sans-Serif';
+    } else {
+        appState.readerFont = 'reader-text-serif';
+        readerFontToggle.textContent = 'Serif';
+    }
+    
+    readerBody.className = `reader-body-container ${appState.readerTheme} ${appState.readerFont}`;
+}
+
+function toggleReaderTheme() {
+    if (appState.readerTheme === 'theme-reader-dark') {
+        appState.readerTheme = 'theme-reader-light';
+        readerThemeToggle.textContent = 'Day Mode';
+    } else if (appState.readerTheme === 'theme-reader-light') {
+        appState.readerTheme = 'theme-reader-sepia';
+        readerThemeToggle.textContent = 'Sepia';
+    } else {
+        appState.readerTheme = 'theme-reader-dark';
+        readerThemeToggle.textContent = 'Night Mode';
+    }
+    
+    readerBody.className = `reader-body-container ${appState.readerTheme} ${appState.readerFont}`;
+}
+
+function adjustFontSize(direction) {
+    if (direction === 'up' && appState.currentFontSize < 1.8) {
+        appState.currentFontSize += 0.08;
+    } else if (direction === 'down' && appState.currentFontSize > 0.9) {
+        appState.currentFontSize -= 0.08;
+    }
+    renderReaderContent();
+}
+
+// ----------------------------------------------------
+// 13. LOVE STORY MATCHMAKER TROPE QUIZ
+// ----------------------------------------------------
+function startQuiz() {
+    appState.quizStep = 0;
+    appState.quizAnswers = [];
+    renderQuizStep();
+    openModal(quizModal);
+}
+
+function renderQuizStep() {
+    quizContent.innerHTML = '';
+    
+    if (appState.quizStep < quizQuestions.length) {
+        const currentQ = quizQuestions[appState.quizStep];
+        
+        const qTitle = document.createElement('h4');
+        qTitle.className = 'quiz-question-title';
+        qTitle.textContent = currentQ.question;
+        
+        const optsList = document.createElement('div');
+        optsList.className = 'quiz-options-list';
+        
+        currentQ.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'quiz-option-btn';
+            btn.textContent = opt.text;
+            btn.onclick = () => selectQuizOption(opt.value);
+            optsList.appendChild(btn);
+        });
+        
+        quizContent.appendChild(qTitle);
+        quizContent.appendChild(optsList);
+    } else {
+        // Calculate result recommendation
+        showQuizResult();
+    }
+}
+
+function selectQuizOption(value) {
+    appState.quizAnswers.push(value);
+    appState.quizStep++;
+    renderQuizStep();
+}
+
+function showQuizResult() {
+    // Basic match calculations
+    const favSubgenre = appState.quizAnswers[0];
+    const favTrope = appState.quizAnswers[1];
+    
+    // Filter matches
+    let matches = appState.catalog.filter(book => book.subgenre === favSubgenre);
+    if (matches.length === 0) matches = [...appState.catalog]; // fallback
+    
+    // Calculate weights
+    const matchScores = matches.map(book => {
+        let score = 50; // base score
+        if (book.subgenre === favSubgenre) score += 20;
+        if (book.tropes.includes(favTrope)) score += 25;
+        return { book, score };
+    });
+    
+    // Sort matches
+    matchScores.sort((a,b) => b.score - a.score);
+    
+    const matchedBook = matchScores[0].book;
+    const matchedScore = Math.min(100, matchScores[0].score + Math.floor(Math.random() * 6)); // add random factor
+    
+    let coverBg = "linear-gradient(135deg, #1e0a12 0%, #000 100%)";
+    if (matchedBook.subgenre === "Contemporary") coverBg = "linear-gradient(135deg, #e04a74 0%, #4a0f20 100%)";
+    if (matchedBook.subgenre === "Fantasy/Paranormal") coverBg = "linear-gradient(135deg, #2d0b2e 0%, #09030a 100%)";
+    
+    quizContent.innerHTML = `
+        <div class="quiz-match-result">
+            <div class="quiz-match-header">Your Matches are In!</div>
+            <div class="quiz-match-title">It's a Match! (${matchedScore}% Match)</div>
+            
+            <div class="book-card glass-panel" style="width: 100%; max-width: 290px; text-align: left; cursor: default;">
+                <div class="card-cover-wrapper" style="height: 140px;">
+                    <div class="card-cover" style="background: ${coverBg};">
+                        <div class="cover-design" style="justify-content: space-around; padding: 10px;">
+                            <span class="cover-badge" style="background: var(--gold); color: #000;">Love Match</span>
+                            <div class="card-title-mini" style="font-size: 0.95rem;">${matchedBook.title}</div>
+                            <div class="card-author-mini">${matchedBook.author}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-info" style="padding: 12px; gap: 8px;">
+                    <div>
+                        <h4 style="font-family: var(--font-serif); margin-bottom: 2px;">${matchedBook.title}</h4>
+                        <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">by ${matchedBook.author}</p>
+                        <p style="font-size: 0.8rem; line-height: 1.4; color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${matchedBook.quickHook}</p>
+                    </div>
+                    <div class="card-genres" style="margin-bottom: 0;">
+                        ${matchedBook.tropes.slice(0, 2).map(t => `<span class="card-genre-tag">${t}</span>`).join('')}
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; width: 100%; justify-content: center; margin-top: 10px;">
+                <button class="btn-primary" id="quizDetailsBtn" style="font-size: 0.85rem; padding: 10px 20px;">Open Book</button>
+                <button class="btn-secondary" id="quizRetryBtn" style="font-size: 0.85rem; padding: 10px 20px;">Retry Quiz</button>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('quizDetailsBtn').onclick = () => {
+        closeModal(quizModal);
+        openBookModal(matchedBook.id);
+    };
+    
+    document.getElementById('quizRetryBtn').onclick = startQuiz;
+}
+
+// ----------------------------------------------------
+// 14. MODALS CORE HELPER FUNCTIONS
+// ----------------------------------------------------
+function openModal(modal) {
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal(modal) {
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// ----------------------------------------------------
+// 15. INITIALIZATION & EVEN BINDING
+// ----------------------------------------------------
+function bindEvents() {
+    // Search event
+    let searchDebounce;
+    searchInput.oninput = () => {
+        searchClearBtn.style.display = searchInput.value.length > 0 ? 'flex' : 'none';
+        
+        clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(() => {
+            appState.searchQuery = searchInput.value;
+            filterAndSortBooks();
+        }, 300);
+    };
+    
+    searchClearBtn.onclick = () => {
+        searchInput.value = '';
+        searchClearBtn.style.display = 'none';
+        appState.searchQuery = '';
+        filterAndSortBooks();
+    };
+    
+    // Dropdowns
+    sortBySelect.onchange = filterAndSortBooks;
+    langSelect.onchange = filterAndSortBooks;
+    
+    // Theme Switch
+    themeToggleBtn.onclick = toggleTheme;
+    
+    // Bookshelf list
+    bookshelfOpenBtn.onclick = () => {
+        renderBookshelfList();
+        openModal(bookshelfModal);
+    };
+    
+    // Modals Close handlers
+    closeDetailsBtn.onclick = () => closeModal(bookDetailsModal);
+    closeReaderBtn.onclick = () => closeModal(readerModal);
+    closeBookshelfBtn.onclick = () => closeModal(bookshelfModal);
+    closeQuizBtn.onclick = () => closeModal(quizModal);
+    
+    // Close on backdrop click
+    window.onclick = (e) => {
+        if (e.target.classList.contains('modal-overlay')) {
+            closeModal(e.target);
+        }
+    };
+    
+    // Reviews
+    addReviewForm.onsubmit = postReview;
+    
+    // Reader Controls
+    readerNextBtn.onclick = readerNextChapter;
+    readerPrevBtn.onclick = readerPrevChapter;
+    readerFontToggle.onclick = toggleReaderFont;
+    readerThemeToggle.onclick = toggleReaderTheme;
+    readerFontSizeUp.onclick = () => adjustFontSize('up');
+    readerFontSizeDown.onclick = () => adjustFontSize('down');
+    
+    // Matchmaker Quiz trigger
+    quizStartBtn.onclick = startQuiz;
+}
+
+// On Page Load
+window.onload = () => {
+    loadState();
+    bindEvents();
+    
+    // Seed initial display using cached data
+    syncedCount.textContent = appState.catalog.length;
+    renderHeroSpotlight();
+    renderGenreFilters();
+    filterAndSortBooks();
+    
+    // Run background decorative hearts
+    createFloatingHearts();
+    
+    // Run real-time release checks & simulator logs
+    runScraperConsole();
+    startNewReleasesScraperSimulator();
+    
+    // Fetch live romance books from Project Gutenberg
+    // Runs asynchronously so the page displays instantly from Cache, then populates in real-time
+    setTimeout(fetchGutenbergRomance, 1000);
+    
+    // Fetch newly released romance novels from Google Books API
+    // Automatically auto-detects newly released and future romance novels!
+    setTimeout(fetchGoogleBooksRomance, 2500);
+};
+
+// 16. DYNAMIC FULL BOOK PDF GENERATOR — multi-proxy fallback for reliability
+function downloadFullGutenbergPDF(book) {
+    downloadProgressContainer.style.display = 'flex';
+    downloadStatusText.textContent = `Connecting to Gutenberg...`;
+    downloadProgressPercentage.textContent = '0%';
+    downloadProgressFill.style.width = '0%';
+
+    const gutenbergId = book._gutenbergId || (book.id && book.id.startsWith('gutenberg-') ? book.id.split('-')[1] : null);
+    if (!gutenbergId) {
+        generateRealPDF(book);
+        return;
+    }
+
+    const textUrl = `https://www.gutenberg.org/cache/epub/${gutenbergId}/pg${gutenbergId}.txt`;
+
+    // Try proxies in order until one works
+    const proxies = [
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(textUrl)}`,
+        `https://corsproxy.io/?${encodeURIComponent(textUrl)}`,
+        `https://proxy.cors.sh/${textUrl}`,
+    ];
+
+    // The direct Gutenberg PDF URL — complete book, all pages
+    const directPdfUrl = book.downloadUrlPdf && book.downloadUrlPdf !== '#'
+        ? book.downloadUrlPdf
+        : `https://www.gutenberg.org/files/${gutenbergId}/${gutenbergId}-pdf.pdf`;
+
+    async function tryProxies(index) {
+        if (index >= proxies.length) {
+            // ── All proxies failed ─────────────────────────────────────────────
+            // Open the real Gutenberg PDF directly — this IS the full book.
+            downloadProgressContainer.style.display = 'none';
+            showToast(`Opening full PDF for "${book.title}" from Project Gutenberg (all pages)!`, 'success');
+            window.open(directPdfUrl, '_blank');
+            return;
+        }
+
+        downloadStatusText.textContent = `Fetching full text (attempt ${index + 1}/3)...`;
+        try {
+            const response = await fetch(proxies[index]);
+            if (!response.ok) throw new Error('bad response');
+            const fullText = await response.text();
+            if (fullText.length < 5000) throw new Error('text too short — likely an error page');
+            buildFullBookPDF(book, fullText, gutenbergId);
+        } catch (e) {
+            console.warn(`Proxy ${index + 1} failed:`, e);
+            tryProxies(index + 1);
+        }
+    }
+
+    tryProxies(0);
+}
+
+function buildFullBookPDF(book, fullText, gutenbergId) {
+    downloadStatusText.textContent = `Compiling all pages...`;
+    downloadProgressPercentage.textContent = '20%';
+    downloadProgressFill.style.width = '20%';
+
+    const lines = fullText.split(/\r?\n/);
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    const margin = 20;
+    const pageWidth  = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const contentWidth = pageWidth - margin * 2;
+
+    const primaryColor   = [30, 10, 18];
+    const secondaryColor = [212, 175, 55];
+
+    // ── Cover page ──────────────────────────────────────────
+    doc.setFillColor(...primaryColor);
+    doc.rect(0, 0, pageWidth, pageHeight, 'F');
+    doc.setTextColor(...secondaryColor);
+    doc.setFont("times", "italic");
+    doc.setFontSize(30);
+    doc.text("Lovestruck Hub", pageWidth / 2, pageHeight / 3, { align: "center" });
+    doc.setFont("times", "bold");
+    doc.setFontSize(26);
+    doc.setTextColor(255, 255, 255);
+    doc.text(book.title, pageWidth / 2, pageHeight / 2 - 10, { align: "center", maxWidth: contentWidth });
+    doc.setFont("times", "italic");
+    doc.setFontSize(16);
+    doc.setTextColor(...secondaryColor);
+    doc.text(`by ${book.author}`, pageWidth / 2, pageHeight / 2 + 12, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(180, 180, 180);
+    doc.text("COMPLETE PUBLIC DOMAIN EDITION — Project Gutenberg", pageWidth / 2, pageHeight - 25, { align: "center" });
+
+    // ── Wrap all lines (full book, no cap) ──────────────────
+    downloadStatusText.textContent = `Wrapping text for all pages...`;
+    downloadProgressPercentage.textContent = '35%';
+    downloadProgressFill.style.width = '35%';
+
+    doc.setFont("times", "normal");
+    doc.setFontSize(11);
+
+    const wrappedLines = [];
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line === "") {
+            wrappedLines.push("");
+        } else {
+            doc.splitTextToSize(line, contentWidth).forEach(s => wrappedLines.push(s));
+        }
+    }
+
+    let currentLineIndex = 0;
+    const linesPerPage = 42;
+    let pageNum = 1;
+
+    function renderChunk() {
+        if (currentLineIndex >= wrappedLines.length) {
+            downloadProgressPercentage.textContent = '100%';
+            downloadProgressFill.style.width = '100%';
+            downloadStatusText.textContent = `Saving — ${pageNum} pages compiled!`;
+            setTimeout(() => {
+                downloadProgressContainer.style.display = 'none';
+                const fileTitle = book.title.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+                doc.save(`lovestruck_${fileTitle}_complete.pdf`);
+                showToast(`✅ Full book saved: "${book.title}" (${pageNum} pages)!`, "success");
+            }, 400);
+            return;
+        }
+
+        doc.addPage();
+
+        // Running header
+        doc.setFillColor(...primaryColor);
+        doc.rect(0, 0, pageWidth, 12, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("times", "italic");
+        doc.setFontSize(8);
+        doc.text(`${book.title}  |  ${book.author}`, margin, 8);
+        doc.text(`Page ${pageNum}`, pageWidth - margin - 10, 8);
+
+        doc.setTextColor(30, 30, 30);
+        doc.setFont("times", "normal");
+        doc.setFontSize(10.5);
+
+        let y = 24;
+        const chunkEnd = Math.min(currentLineIndex + linesPerPage, wrappedLines.length);
+        for (let i = currentLineIndex; i < chunkEnd; i++) {
+            doc.text(wrappedLines[i], margin, y);
+            y += 6;
+        }
+
+        currentLineIndex = chunkEnd;
+        pageNum++;
+
+        const pct = 35 + Math.floor((currentLineIndex / wrappedLines.length) * 60);
+        downloadProgressPercentage.textContent = `${pct}%`;
+        downloadProgressFill.style.width = `${pct}%`;
+        downloadStatusText.textContent = `Building page ${pageNum} of ~${Math.ceil(wrappedLines.length / linesPerPage)}...`;
+
+        setTimeout(renderChunk, 0); // yield to browser between pages
+    }
+
+    setTimeout(renderChunk, 50);
+}
+
+// 17. GOOGLE BOOKS API ROMANCE SCANNER — 40 books, multi-query, re-polls every 10 min
+async function fetchGoogleBooksRomance() {
+    // Multiple search queries to catch different romance sub-niches
+    const QUERIES = [
+        'subject:romance&orderBy=newest&maxResults=20',
+        'subject:romance+fantasy&orderBy=newest&maxResults=10',
+        'subject:historical+romance&orderBy=newest&maxResults=10',
+    ];
+
+    let addedCount = 0;
+
+    for (const q of QUERIES) {
+        try {
+            scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] Querying Google Books: ${q.split('&')[0]}...`;
+            const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&printType=books&langRestrict=en`);
+            if (!response.ok) throw new Error("API error");
+
+            const data = await response.json();
+            const items = data.items || [];
+
+            items.forEach(item => {
+                const idStr = `google-${item.id}`;
+                if (appState.scrapedIds.has(idStr)) return;
+
+                const volumeInfo = item.volumeInfo || {};
+                const authors = volumeInfo.authors || ["Unknown Author"];
+
+                let mappedSubgenre = "Contemporary";
+                const cats = (volumeInfo.categories || []).join(' ').toLowerCase();
+                const titleDesc = (volumeInfo.title + ' ' + (volumeInfo.description || '')).toLowerCase();
+
+                if (cats.includes('historical') || cats.includes('regency') || cats.includes('victorian') || titleDesc.includes('historical romance')) {
+                    mappedSubgenre = "Historical";
+                } else if (cats.includes('fantasy') || cats.includes('paranormal') || cats.includes('magic') || titleDesc.includes('fantasy romance')) {
+                    mappedSubgenre = "Fantasy/Paranormal";
+                } else if (cats.includes('gothic') || cats.includes('horror') || cats.includes('dark') || titleDesc.includes('dark romance')) {
+                    mappedSubgenre = "Gothic";
+                } else if (cats.includes('sci-fi') || cats.includes('science fiction') || cats.includes('space') || titleDesc.includes('sci-fi romance')) {
+                    mappedSubgenre = "Sci-Fi";
+                }
+
+                let pubYear = 2026;
+                if (volumeInfo.publishedDate) pubYear = parseInt(volumeInfo.publishedDate.substring(0, 4)) || 2026;
+
+                const synopsis = volumeInfo.description || "A newly released romantic novel. Follow the characters as they navigate love, intimacy, and destiny.";
+                const infoLink = volumeInfo.previewLink || volumeInfo.infoLink || `https://books.google.com/books?id=${item.id}`;
+
+                let tropes = ["New Release", "Modern Romance"];
+                if (mappedSubgenre === "Fantasy/Paranormal") tropes.push("Magic", "Fated Mates");
+                if (mappedSubgenre === "Historical") tropes.push("High Society", "Regency Courtship");
+                if (titleDesc.includes("enemies")) tropes.push("Enemies to Lovers");
+                if (titleDesc.includes("fake")) tropes.push("Fake Dating");
+                if (titleDesc.includes("secret")) tropes.push("Secret Romance");
+                if (titleDesc.includes("second chance")) tropes.push("Second Chance");
+
+                appState.catalog.push({
+                    id: idStr,
+                    title: volumeInfo.title,
+                    author: authors.join(", "),
+                    year: pubYear,
+                    language: volumeInfo.language || "en",
+                    genres: ["New Releases", "Romance"],
+                    subgenre: mappedSubgenre,
+                    rating: parseFloat((4.3 + Math.random() * 0.7).toFixed(1)),
+                    popularity: Math.floor(25000 + Math.random() * 50000),
+                    pages: volumeInfo.pageCount || 310,
+                    quickHook: volumeInfo.subtitle || `A new ${mappedSubgenre.toLowerCase()} romance released in ${pubYear}.`,
+                    synopsis: synopsis,
+                    tropes: tropes.slice(0, 5),
+                    downloadUrlEpub: "#",
+                    downloadUrlPdf: "#",
+                    googleBooksLink: infoLink,
+                    chapters: [{
+                        title: "Chapter 1: About This Book",
+                        content: [
+                            synopsis.length > 300
+                                ? synopsis.substring(0, 300) + '...'
+                                : synopsis,
+                            `"${volumeInfo.title}" is a ${mappedSubgenre.toLowerCase()} romance ${pubYear >= 2020 ? 'newly released' : 'published'} in ${pubYear} by ${authors.join(', ')}.`,
+                            `This is a copyrighted novel. To read the full book, visit the link below:`,
+                            infoLink
+                        ]
+                    }]
+                });
+
+                appState.scrapedIds.add(idStr);
+                addedCount++;
+            });
+
+            await new Promise(r => setTimeout(r, 300)); // be polite to the API
+        } catch (e) {
+            console.warn("Google Books query failed:", e);
+        }
+    }
+
+    if (addedCount > 0) {
+        syncedCount.textContent = appState.catalog.length;
+        scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] New releases synced: +${addedCount} novels (${appState.catalog.length} total).`;
+        showToast(`${addedCount} new romance releases synced from Google Books!`, 'success');
+        renderGenreFilters();
+        filterAndSortBooks();
+    }
+
+    // Re-poll every 10 minutes to catch brand-new releases automatically
+    setTimeout(fetchGoogleBooksRomance, 10 * 60 * 1000);
+}
+
+// 18. FLOATING DECORATIVE HEARTS SYSTEM (AESTHETIC UPGRADE)
+function createFloatingHearts() {
+    const container = document.getElementById('heartParticles');
+    if (!container) return;
+    
+    const heartSymbols = ['❤️', '💖', '✨', '🌹', '💕', '💘'];
+    
+    // Spawn a heart every 1.8 seconds
+    setInterval(() => {
+        if (document.hidden) return; // don't spawn if tab is in background
+        
+        const particle = document.createElement('div');
+        particle.className = 'heart-particle';
+        
+        // Random symbol
+        particle.textContent = heartSymbols[Math.floor(Math.random() * heartSymbols.length)];
+        
+        // Random positioning & styling
+        const startX = Math.random() * 100; // in vw
+        const size = 0.8 + Math.random() * 1.2; // in rem
+        const duration = 10 + Math.random() * 8; // 10s to 18s
+        const opacity = 0.2 + Math.random() * 0.35;
+        
+        particle.style.left = `${startX}vw`;
+        particle.style.fontSize = `${size}rem`;
+        particle.style.opacity = opacity;
+        particle.style.animationDuration = `${duration}s`;
+        
+        container.appendChild(particle);
+        
+        // Remove after animation completes
+        setTimeout(() => {
+            particle.remove();
+        }, duration * 1000);
+        
+    }, 1800);
+}
+
+// ============================================================
+// FEATURE: INDIVIDUAL NOVEL PAGE
+// Opens a full-screen dedicated page for each novel instead of
+// relying only on the modal. Reuses all existing CSS classes.
+// ============================================================
+
+function openNovelPage(bookId) {
+    const book = appState.catalog.find(b => b.id === bookId);
+    if (!book) return;
+
+    appState.currentBook = book;
+
+    // Create overlay element if it doesn't exist yet
+    let novelPage = document.getElementById('novelPageOverlay');
+    if (!novelPage) {
+        novelPage = document.createElement('div');
+        novelPage.id = 'novelPageOverlay';
+        // Reuse the existing modal-overlay class for backdrop/scroll handling
+        novelPage.className = 'modal-overlay';
+        novelPage.style.cssText = 'overflow-y:auto; align-items:flex-start; padding:0;';
+        document.body.appendChild(novelPage);
+    }
+
+    // Cover colour — mirrors the exact logic in openBookModal()
+    let coverBg = "linear-gradient(135deg, #1e0a12 0%, #000 100%)";
+    if (book.subgenre === "Fantasy/Paranormal") coverBg = "linear-gradient(135deg, #2d0b2e 0%, #09030a 100%)";
+    if (book.subgenre === "Contemporary")       coverBg = "linear-gradient(135deg, #e04a74 0%, #4a0f20 100%)";
+    if (book.subgenre === "Historical")         coverBg = "linear-gradient(135deg, #3a2215 0%, #150904 100%)";
+    if (book.subgenre === "Sci-Fi")             coverBg = "linear-gradient(135deg, #0f172a 0%, #020617 100%)";
+
+    // Star rating HTML
+    let starsHtml = '';
+    const rounded = Math.round(book.rating);
+    for (let i = 1; i <= 5; i++) starsHtml += i <= rounded ? '★' : '☆';
+
+    // Trope pills
+    const tropeHtml = (book.tropes || []).map(t => `<span class="genre-pill">${t}</span>`).join('');
+
+    // Chapters list (clickable)
+    const chaptersHtml = (book.chapters || []).map((ch, idx) => `
+        <div class="bookshelf-item" style="cursor:pointer; gap:1rem;"
+             onclick="renderNovelPageChapter('${book.id}', ${idx})">
+            <div style="width:36px;height:36px;border-radius:6px;background:var(--accent-glow);
+                        display:flex;align-items:center;justify-content:center;
+                        color:var(--accent);font-weight:700;font-size:0.75rem;flex-shrink:0;">
+                ${idx + 1}
+            </div>
+            <div style="flex:1;">
+                <div style="font-size:0.88rem;color:var(--text-primary);font-weight:600;">${ch.title}</div>
+                <div style="font-size:0.72rem;color:var(--text-muted);">Click to read preview</div>
+            </div>
+            <span style="color:var(--text-muted);font-size:1.1rem;">›</span>
+        </div>
+    `).join('');
+
+    // Existing reviews
+    const bookReviews = appState.reviews[book.id] || [];
+    const reviewsHtml = bookReviews.length === 0
+        ? `<p style="font-size:0.85rem;color:var(--text-muted);font-style:italic;">
+               No reviews yet. Be the first to share your thoughts!
+           </p>`
+        : bookReviews.map(r => {
+            let hearts = '';
+            for (let i = 1; i <= 5; i++) hearts += i <= r.rating ? '♥' : '♡';
+            return `
+                <div class="review-card">
+                    <div class="review-header">
+                        <span class="review-author">${r.author}</span>
+                        <span class="review-rating">${hearts}</span>
+                    </div>
+                    <p class="review-text">${r.text}</p>
+                </div>`;
+        }).join('');
+
+    const isOnShelf = appState.bookshelf.includes(book.id);
+
+    novelPage.innerHTML = `
+        <div style="width:100%;max-width:1200px;margin:0 auto;padding:1rem 1rem 4rem;
+                    display:flex;flex-direction:column;gap:1rem;">
+
+            <!-- Back bar — uses existing glass-panel + btn-secondary styling -->
+            <div class="glass-panel" style="display:flex;align-items:center;
+                         justify-content:space-between;padding:0.75rem 1.25rem;
+                         position:sticky;top:0.5rem;z-index:10;">
+                <button class="btn-secondary" style="padding:6px 14px;font-size:0.82rem;"
+                        onclick="closeNovelPage()">
+                    ← Back to Library
+                </button>
+                <span style="font-size:0.78rem;color:var(--text-muted);
+                             overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+                             flex:1;text-align:center;margin:0 1rem;">
+                    Lovestruck Hub / <span style="color:var(--text-secondary);">${book.title}</span>
+                </span>
+                <button class="btn-secondary" id="npTopShelfBtn"
+                        style="padding:6px 14px;font-size:0.82rem;
+                               ${isOnShelf ? 'border-color:var(--accent);color:var(--accent);' : ''}"
+                        onclick="toggleNovelPageShelf('${book.id}')">
+                    ${isOnShelf ? '♥ Saved' : '♥ Add to LoveList'}
+                </button>
+            </div>
+
+            <!-- Hero — mirrors the existing details modal layout -->
+            <div class="glass-panel" style="padding:2rem;display:flex;gap:2rem;
+                         flex-wrap:wrap;align-items:flex-start;">
+
+                <!-- Cover (same cover-design markup as the rest of the app) -->
+                <div style="flex-shrink:0;">
+                    <div class="details-cover" style="width:180px;height:260px;background:${coverBg};">
+                        <div class="cover-design">
+                            <span class="cover-badge">${book.subgenre}</span>
+                            <div class="cover-title" style="font-size:1rem;">${book.title}</div>
+                            <div>
+                                <div class="cover-author">${book.author}</div>
+                                <div class="cover-decorative-bar"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info -->
+                <div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:0.85rem;">
+                    <h1 style="font-family:var(--font-serif);font-size:clamp(1.5rem,3vw,2.4rem);
+                                font-weight:800;line-height:1.15;">${book.title}</h1>
+                    <p style="font-size:0.95rem;color:var(--text-muted);">
+                        by <span style="color:var(--gold);font-weight:600;">${book.author}</span>
+                    </p>
+
+                    <!-- Stats strip — reuses existing stat-item classes -->
+                    <div class="details-quick-stats" style="display:flex;flex-wrap:wrap;gap:0.5rem;">
+                        <div class="stat-item">
+                            <span class="stat-label">Rating</span>
+                            <span class="stat-value" style="color:var(--gold);">${starsHtml} ${book.rating}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Released</span>
+                            <span class="stat-value">${book.year}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Pages</span>
+                            <span class="stat-value">${book.pages}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Language</span>
+                            <span class="stat-value">${book.language.toUpperCase()}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Downloads</span>
+                            <span class="stat-value">${book.popularity.toLocaleString()}</span>
+                        </div>
+                    </div>
+
+                    <!-- Trope pills -->
+                    <div class="hero-genres">${tropeHtml}</div>
+
+                    <!-- Action buttons — identical to existing hero buttons -->
+                    <div class="hero-buttons" style="flex-wrap:wrap;">
+                        <button class="btn-primary" onclick="openReader('${book.id}')">
+                            📖 Read Preview
+                        </button>
+                        <button class="btn-secondary" id="npShelfBtn"
+                                style="${isOnShelf ? 'border-color:var(--accent);color:var(--accent);' : ''}"
+                                onclick="toggleNovelPageShelf('${book.id}')">
+                            ${isOnShelf ? '♥ Saved in LoveList' : '♥ Add to LoveList'}
+                        </button>
+                        <button class="btn-secondary"
+                                style="border-color:var(--gold);color:var(--gold);"
+                                onclick="startSmartDownload(appState.catalog.find(b=>b.id==='${book.id}'),'EPUB')">
+                            ⬇ EPUB
+                        </button>
+                        <button class="btn-secondary"
+                                style="border-color:var(--gold);color:var(--gold);"
+                                onclick="startSmartDownload(appState.catalog.find(b=>b.id==='${book.id}'),'PDF')">
+                            ⬇ PDF (Full Book)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Synopsis -->
+            <div class="glass-panel" style="padding:1.5rem;">
+                <h4 class="details-synopsis-title">Synopsis</h4>
+                <p class="details-synopsis">${book.synopsis}</p>
+            </div>
+
+            <!-- Chapter 1 Summary (auto-shown as preview) -->
+            ${book.chapters && book.chapters.length > 0 ? `
+            <div class="glass-panel" style="padding:1.5rem;">
+                <h4 class="details-synopsis-title" style="display:flex;align-items:center;gap:0.5rem;">
+                    <span style="color:var(--accent);">📖</span> Chapter 1 Preview
+                    <span style="font-size:0.72rem;font-weight:400;color:var(--text-muted);margin-left:auto;">
+                        ${book.chapters[0].title}
+                    </span>
+                </h4>
+                <div style="font-family:var(--font-serif);line-height:1.85;color:var(--text-secondary);">
+                    ${book.chapters[0].content.slice(0, 5).map(p =>
+                        `<p style="margin-bottom:1em;">${p}</p>`
+                    ).join('')}
+                    ${book.chapters[0].content.length > 5 ? `
+                    <p style="font-size:0.8rem;color:var(--text-muted);font-style:italic;margin-top:0.5rem;">
+                        … Click "Read Preview" above or the chapter list below to continue reading.
+                    </p>` : ''}
+                </div>
+            </div>` : ''}
+
+            <!-- Two-column: Chapters + Reviews -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;flex-wrap:wrap;">
+
+                <!-- Chapters -->
+                <div class="glass-panel" style="padding:1.5rem;">
+                    <h4 class="details-synopsis-title">Chapters Available</h4>
+                    <div class="bookshelf-list" style="max-height:none;padding:0;">
+                        ${chaptersHtml || '<p style="font-size:0.85rem;color:var(--text-muted);">Download the full book to read all chapters.</p>'}
+                    </div>
+                    <!-- Inline chapter reader (hidden until chapter clicked) -->
+                    <div id="npInlineReader" style="display:none;margin-top:1rem;
+                         border-top:1px solid var(--border-color);padding-top:1rem;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;
+                                    margin-bottom:0.75rem;">
+                            <strong id="npReaderChTitle" style="font-family:var(--font-serif);
+                                    font-size:0.95rem;color:var(--text-primary);"></strong>
+                            <button class="btn-icon" style="width:28px;height:28px;"
+                                    onclick="document.getElementById('npInlineReader').style.display='none'">✕</button>
+                        </div>
+                        <div id="npReaderText" class="details-synopsis"
+                             style="font-family:var(--font-serif);line-height:1.85;"></div>
+                    </div>
+                </div>
+
+                <!-- Reviews -->
+                <div class="glass-panel" style="padding:1.5rem;">
+                    <h4 class="details-synopsis-title">Reader Reviews</h4>
+                    <div id="npReviewsList" class="reviews-list">${reviewsHtml}</div>
+
+                    <!-- Write review form — same markup as the existing modal form -->
+                    <form class="add-review-form" onsubmit="return false;" style="margin-top:1rem;">
+                        <h5>Write a Review</h5>
+                        <div class="form-row">
+                            <input type="text" class="form-input" id="npReviewAuthor" placeholder="Your Name" required>
+                            <select class="form-input" id="npReviewRating" required>
+                                <option value="5">5 Hearts (Amazing)</option>
+                                <option value="4">4 Hearts (Great)</option>
+                                <option value="3">3 Hearts (Good)</option>
+                                <option value="2">2 Hearts (Okay)</option>
+                                <option value="1">1 Heart (Disliked)</option>
+                            </select>
+                        </div>
+                        <textarea class="form-textarea" id="npReviewText"
+                                  placeholder="Express your thoughts about this romance..." required></textarea>
+                        <button type="submit" class="btn-form-submit"
+                                onclick="postNovelPageReview('${book.id}')">Post Review</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Similar novels -->
+            <div class="glass-panel" style="padding:1.5rem;">
+                <h4 class="details-synopsis-title">More in ${book.subgenre} Romance</h4>
+                <div id="npSimilarBooks" class="book-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));"></div>
+            </div>
+        </div>
+    `;
+
+    // Show overlay
+    novelPage.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    // Update browser history so the back button closes the page naturally
+    history.pushState({ novelPage: bookId }, '', `#novel-${bookId}`);
+
+    // Render similar books into the grid
+    renderNovelPageSimilar(book);
+}
+
+function closeNovelPage() {
+    const overlay = document.getElementById('novelPageOverlay');
+    if (overlay) {
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+    if (location.hash.startsWith('#novel-')) {
+        history.pushState({}, '', location.pathname);
+    }
+}
+
+// Close novel page when browser back button is pressed
+window.addEventListener('popstate', () => {
+    const overlay = document.getElementById('novelPageOverlay');
+    if (overlay && overlay.classList.contains('active')) {
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+});
+
+function toggleNovelPageShelf(bookId) {
+    const isSaved = toggleSaveBook(bookId);
+    const label = isSaved ? '♥ Saved in LoveList' : '♥ Add to LoveList';
+    const style = isSaved ? 'border-color:var(--accent);color:var(--accent);' : '';
+    ['npShelfBtn', 'npTopShelfBtn'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) { btn.textContent = isSaved ? (id === 'npTopShelfBtn' ? '♥ Saved' : label) : label; btn.style.cssText = style; }
+    });
+}
+
+function renderNovelPageChapter(bookId, chapterIndex) {
+    const book = appState.catalog.find(b => b.id === bookId);
+    if (!book || !book.chapters[chapterIndex]) return;
+    const ch = book.chapters[chapterIndex];
+    document.getElementById('npReaderChTitle').textContent = ch.title;
+    document.getElementById('npReaderText').innerHTML = ch.content.map(p => `<p style="margin-bottom:1em;">${p}</p>`).join('');
+    const reader = document.getElementById('npInlineReader');
+    reader.style.display = 'block';
+    reader.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function postNovelPageReview(bookId) {
+    const author = document.getElementById('npReviewAuthor').value.trim();
+    const rating = parseInt(document.getElementById('npReviewRating').value);
+    const text   = document.getElementById('npReviewText').value.trim();
+    if (!author || !text) { showToast('Please fill in your name and review.', 'warning'); return; }
+
+    if (!appState.reviews[bookId]) appState.reviews[bookId] = [];
+    appState.reviews[bookId].unshift({ author, rating, text });
+    saveReviews();
+
+    document.getElementById('npReviewAuthor').value = '';
+    document.getElementById('npReviewText').value   = '';
+
+    // Refresh review list in the novel page
+    const list = document.getElementById('npReviewsList');
+    if (list) {
+        list.innerHTML = appState.reviews[bookId].map(r => {
+            let hearts = '';
+            for (let i = 1; i <= 5; i++) hearts += i <= r.rating ? '♥' : '♡';
+            return `<div class="review-card">
+                <div class="review-header">
+                    <span class="review-author">${r.author}</span>
+                    <span class="review-rating">${hearts}</span>
+                </div>
+                <p class="review-text">${r.text}</p>
+            </div>`;
+        }).join('');
+    }
+    showToast('Review posted successfully!', 'success');
+}
+
+function renderNovelPageSimilar(book) {
+    const container = document.getElementById('npSimilarBooks');
+    if (!container) return;
+
+    const similar = appState.catalog
+        .filter(b => b.id !== book.id && b.subgenre === book.subgenre)
+        .sort((a, b) => b.rating - a.rating)
+        .slice(0, 6);
+
+    if (similar.length === 0) {
+        container.innerHTML = '<p style="font-size:0.85rem;color:var(--text-muted);">No similar books found yet — check back as more sync in.</p>';
+        return;
+    }
+
+    similar.forEach(b => {
+        let bg = "linear-gradient(135deg, #1e0a12 0%, #000 100%)";
+        if (b.subgenre === "Fantasy/Paranormal") bg = "linear-gradient(135deg, #2d0b2e 0%, #09030a 100%)";
+        if (b.subgenre === "Contemporary")       bg = "linear-gradient(135deg, #e04a74 0%, #4a0f20 100%)";
+        if (b.subgenre === "Historical")         bg = "linear-gradient(135deg, #3a2215 0%, #150904 100%)";
+        if (b.subgenre === "Sci-Fi")             bg = "linear-gradient(135deg, #0f172a 0%, #020617 100%)";
+
+        let stars = '';
+        const r = Math.round(b.rating);
+        for (let i = 1; i <= 5; i++) stars += i <= r ? '★' : '☆';
+
+        const card = document.createElement('div');
+        card.className = 'book-card glass-panel';
+        card.style.cursor = 'pointer';
+        card.innerHTML = `
+            <div class="card-cover-wrapper">
+                <div class="card-cover" style="background:${bg};">
+                    <div class="cover-design">
+                        <span class="cover-badge">${b.subgenre}</span>
+                        <div class="card-title-mini">${b.title}</div>
+                        <div>
+                            <div class="card-author-mini">${b.author}</div>
+                            <div style="height:3px;width:35px;background:var(--accent);border-radius:9px;margin:4px auto 0;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-info">
+                <div>
+                    <div class="card-meta-row">
+                        <div class="rating-badge">${stars} <span>${b.rating}</span></div>
+                        <span class="lang-badge">${b.language.toUpperCase()}</span>
+                    </div>
+                    <h3 class="card-title">${b.title}</h3>
+                    <p class="card-author">by ${b.author}</p>
+                </div>
+            </div>`;
+        card.onclick = () => openNovelPage(b.id);
+        container.appendChild(card);
+    });
+}
+
+// Make every book card open the novel page instead of the details modal
+// We patch renderBookGrid() to rewire the click handlers after render.
+const _origRenderBookGrid = renderBookGrid;
+window.renderBookGrid = function(books) {
+    _origRenderBookGrid(books);
+    document.querySelectorAll('.book-card').forEach(card => {
+        // Find the book id from the Quick View button's onclick attribute
+        const qvBtn = card.querySelector('.btn-card-primary');
+        if (!qvBtn) return;
+        const match = (qvBtn.getAttribute('onclick') || '').match(/openBookModal\('([^']+)'\)/);
+        if (!match) return;
+        const bookId = match[1];
+        // Rewire card click → novel page
+        card.onclick = () => openNovelPage(bookId);
+        // Also rewire Quick View button → novel page
+        qvBtn.setAttribute('onclick', `event.stopPropagation(); openNovelPage('${bookId}')`);
+    });
+};
+
+// ============================================================
+// FEATURE: IMPROVED SEARCH — faster, live feedback in log bar
+// ============================================================
+// The existing bindEvents() sets up search with a 300ms debounce.
+// We upgrade to 200ms and add live counts in the scraper log.
+
+const _origBindEvents = bindEvents;
+window.bindEvents = function() {
+    _origBindEvents();
+
+    // Detach the old oninput so we don't double-fire
+    searchInput.oninput = null;
+
+    let searchDebounce;
+    searchInput.addEventListener('input', () => {
+        const q = searchInput.value;
+        searchClearBtn.style.display = q.length > 0 ? 'flex' : 'none';
+
+        if (q.trim().length > 0) {
+            scraperLogText.textContent = `[SEARCH] Scanning ${appState.catalog.length} novels for: "${q.trim()}"...`;
+        }
+
+        clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(() => {
+            appState.searchQuery = q;
+            filterAndSortBooks();
+            if (q.trim().length > 0) {
+                const countEl = document.getElementById('resultsCount');
+                const num = countEl ? countEl.textContent : '';
+                scraperLogText.textContent = `[SEARCH] Found ${num} matches for "${q.trim()}" across ${appState.catalog.length} novels.`;
+            }
+        }, 200);
+    });
+
+    // Clear button
+    searchClearBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        searchClearBtn.style.display = 'none';
+        appState.searchQuery = '';
+        filterAndSortBooks();
+        scraperLogText.textContent = `[SEARCH] Cleared — showing full catalog (${appState.catalog.length} novels).`;
+        searchInput.focus();
+    });
+};
