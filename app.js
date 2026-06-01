@@ -594,6 +594,26 @@ function generateCopyrightedBookChapters(title, author, synopsis) {
 }
 
 // ─── LOAD 800+ BOOKS FROM GUTENBERG (paginated) ────────────────────────────
+// Helper: fetch with up to 3 retries and a 15 s timeout
+async function fetchWithRetry(url) {
+    const attempts = 3;
+    for (let i = 0; i < attempts; i++) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            const res = await fetch(url, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (res.ok) return res;
+            // If not ok, throw to trigger retry
+            throw new Error(`HTTP ${res.status}`);
+        } catch (e) {
+            if (i === attempts - 1) throw e; // rethrow after last attempt
+            // small back‑off before next try
+            await new Promise(r => setTimeout(r, 500 * (i + 1)));
+        }
+    }
+}
+
 // Gutendex returns 32 books per page. We fetch up to 30 pages (≈960 books)
 // across romance, love, and courtship topics, inserting them in small batches
 // so the UI stays responsive throughout.
@@ -610,7 +630,7 @@ async function load800GutenbergBooks() {
 
         while (nextUrl && page < MAX_PAGES) {
             try {
-                const res  = await fetch(nextUrl);
+                const res = await fetchWithRetry(nextUrl);
                 if (!res.ok) break;
                 const data = await res.json();
                 const results = data.results || [];

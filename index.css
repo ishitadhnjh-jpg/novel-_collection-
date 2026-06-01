@@ -1654,6 +1654,110 @@ body {
     to { transform: translateX(0); opacity: 1; }
 }
 
+/* Responsive Design Adjustments */
+@media (max-width: 1024px) {
+    /* Reduce sidebar width and allow it to stack */
+    .main-layout {
+        grid-template-columns: 240px 1fr;
+    }
+    .sidebar-filters {
+        padding: var(--space-sm);
+    }
+    .hero-cover-container {
+        width: 160px;
+        height: 240px;
+    }
+    .hero-title {
+        font-size: 2.2rem;
+    }
+    .hero-description {
+        font-size: 0.95rem;
+    }
+    .hero-buttons {
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+    }
+    .btn-primary, .btn-secondary {
+        padding: 10px 20px;
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-layout {
+        grid-template-columns: 1fr;
+    }
+    .sidebar-filters {
+        display: flex;
+        flex-direction: row;
+        overflow-x: auto;
+        gap: var(--space-xs);
+        padding: var(--space-xs);
+    }
+    .filter-group {
+        flex-direction: column;
+        min-width: 120px;
+    }
+    .hero-spotlight {
+        padding: var(--space-sm);
+    }
+    .hero-content {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    .hero-cover-container {
+        width: 140px;
+        height: 210px;
+        margin-bottom: var(--space-sm);
+    }
+    .hero-title {
+        font-size: 1.8rem;
+    }
+    .hero-meta {
+        justify-content: center;
+    }
+    .hero-buttons {
+        justify-content: center;
+    }
+    .book-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+    .book-card {
+        height: auto;
+    }
+    .card-cover-wrapper {
+        height: 140px;
+    }
+    .modal-content {
+        width: 90%;
+        max-height: 90vh;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-cover-container {
+        width: 120px;
+        height: 180px;
+    }
+    .hero-title {
+        font-size: 1.5rem;
+    }
+    .search-wrapper {
+        max-width: 200px;
+    }
+    .btn-icon {
+        width: 36px;
+        height: 36px;
+    }
+    .header-actions {
+        gap: var(--space-xs);
+    }
+    .book-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+}
+
 /* Responsive UI Adjustments */
 @media (max-width: 900px) {
     .main-layout {
