@@ -614,53 +614,82 @@ async function fetchWithRetry(url) {
     }
 }
 
-// Gutendex returns 32 books per page. We fetch up to 30 pages (≈960 books)
-// across romance, love, and courtship topics, inserting them in small batches
-// so the UI stays responsive throughout.
 async function load800GutenbergBooks() {
     const TOPICS = ['romance', 'love', 'courtship', 'marriage', 'woman'];
-    const MAX_PAGES = 18; // fetch more pages for higher coverage
-    let totalAdded = 0;
+    const MAX_PAGES = 30; // increased from 18 for broader coverage
+    const CONCURRENCY_LIMIT = 6; // limit simultaneous page fetches
+
+    // Attempt to load from cache (valid for 12 h)
+    const cached = localStorage.getItem('lovestruck_catalog_cache');
+    const cachedTs = localStorage.getItem('lovestruck_catalog_cache_ts');
+    if (cached && cachedTs && (Date.now() - Number(cachedTs) < 12 * 60 * 60 * 1000)) {
+        try {
+            const parsed = JSON.parse(cached);
+            parsed.forEach(entry => {
+                if (!appState.scrapedIds.has(entry.id)) {
+                    appState.catalog.push(entry);
+                    appState.scrapedIds.add(entry.id);
+                }
+            });
+            scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] 📡 Loaded catalog from cache (${appState.catalog.length} books).`;
+            syncedCount.textContent = appState.catalog.length;
+            renderGenreFilters();
+            filterAndSortBooks();
+            return;
+        } catch (e) { console.warn('Cache load failed', e); }
+    }
+
     scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] 📡 Starting ultra‑fast sync: loading up to ${MAX_PAGES * 32 * TOPICS.length} romance novels…`;
 
-    // Build a flat array of all page fetch promises across all topics
-    const allPagePromises = [];
+    // Build an array of async task factories for each page request
+    const tasks = [];
     for (const topic of TOPICS) {
         for (let p = 1; p <= MAX_PAGES; p++) {
-            const url = `https://gutendex.com/books/?topic=${encodeURIComponent(topic)}&page=${p}`;
-            allPagePromises.push(
-                fetchWithRetry(url)
-                    .then(res => (res && res.ok) ? res.json() : null)
-                    .catch(() => null)
-                    .then(data => ({ topic, data }))
-            );
+            tasks.push(async () => {
+                const url = `https://gutendex.com/books/?topic=${encodeURIComponent(topic)}&page=${p}`;
+                try {
+                    const res = await fetchWithRetry(url);
+                    const data = await res.json();
+                    const results = data.results || [];
+                    results.forEach(book => {
+                        const entry = buildGutenbergBookEntry(book);
+                        if (!appState.scrapedIds.has(entry.id)) {
+                            appState.catalog.push(entry);
+                            appState.scrapedIds.add(entry.id);
+                        }
+                    });
+                } catch (_) { /* ignore failed page */ }
+            });
         }
     }
 
-    // Resolve all requests in parallel
-    const pageResults = await Promise.all(allPagePromises);
-    const topicCounts = {};
-    pageResults.forEach(({ topic, data }) => {
-        if (!data) return;
-        const results = data.results || [];
-        results.forEach(book => {
-            const entry = buildGutenbergBookEntry(book);
-            if (!appState.scrapedIds.has(entry.id)) {
-                appState.catalog.push(entry);
-                appState.scrapedIds.add(entry.id);
-                totalAdded++;
-                topicCounts[topic] = (topicCounts[topic] || 0) + 1;
+    // Simple concurrency runner
+    async function runConcurrent(taskFns, limit) {
+        const results = [];
+        const executing = [];
+        for (const task of taskFns) {
+            const p = task().then(r => {
+                executing.splice(executing.indexOf(p), 1);
+                return r;
+            });
+            results.push(p);
+            executing.push(p);
+            if (executing.length >= limit) {
+                await Promise.race(executing);
             }
-        });
-    });
+        }
+        return Promise.all(results);
+    }
 
-    // Update UI once after all processing
+    await runConcurrent(tasks, CONCURRENCY_LIMIT);
+
+    // UI updates after all pages processed
     syncedCount.textContent = appState.catalog.length;
-    scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] ✅ Ultra‑fast sync complete! Added ${totalAdded} new books across topics – total library: ${appState.catalog.length}`;
+    scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] ✅ Ultra‑fast sync complete! Total library: ${appState.catalog.length}`;
     renderGenreFilters();
     filterAndSortBooks();
 
-    // Cache the catalog for future loads
+    // Cache the catalog for future quick loads (store without heavy chapter data)
     try {
         const cachePayload = JSON.stringify(appState.catalog.map(b => ({ ...b, isFullyLoaded: false })));
         localStorage.setItem('lovestruck_catalog_cache', cachePayload);
@@ -1216,7 +1245,7 @@ function startSimulatedDownload(book, format) {
                 if (format === 'PDF') {
                     // Generate and download a real PDF file client-side using jsPDF
                     try {
-                        generateRealPDF(book);
+                        pdfHelper.downloadPdf(book);
                     } catch (e) {
                         console.error("PDF Generation failed:", e);
                         showToast(`PDF generation error. Attempting print window...`, 'warning');
