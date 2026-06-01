@@ -1965,3 +1965,25 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--gold);
 }
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .hero-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .hero-cover-container {
+    margin-bottom: var(--space-md);
+    width: 100%;
+    height: auto;
+  }
+  .hero-cover {
+    height: auto;
+    aspect-ratio: 2 / 3;
+  }
+}
+
+@media (max-width: 600px) {
+  .book-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+}
