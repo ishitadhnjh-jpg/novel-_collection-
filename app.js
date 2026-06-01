@@ -619,117 +619,60 @@ async function fetchWithRetry(url) {
 // so the UI stays responsive throughout.
 async function load800GutenbergBooks() {
     const TOPICS = ['romance', 'love', 'courtship', 'marriage', 'woman'];
-    const MAX_PAGES = 12; // increased to fetch more books and speed up sync
+    const MAX_PAGES = 18; // fetch more pages for higher coverage
     let totalAdded = 0;
+    scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] 📡 Starting ultra‑fast sync: loading up to ${MAX_PAGES * 32 * TOPICS.length} romance novels…`;
 
-    scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] 📡 Starting fast-sync: loading up to ${MAX_PAGES * 32 * TOPICS.length} romance novels…`;
-
+    // Build a flat array of all page fetch promises across all topics
+    const allPagePromises = [];
     for (const topic of TOPICS) {
-        // Build an array of fetch promises for all pages of this topic
-        const pagePromises = [];
         for (let p = 1; p <= MAX_PAGES; p++) {
             const url = `https://gutendex.com/books/?topic=${encodeURIComponent(topic)}&page=${p}`;
-            pagePromises.push(fetchWithRetry(url).then(res => (res && res.ok) ? res.json() : null).catch(() => null);
+            allPagePromises.push(
+                fetchWithRetry(url)
+                    .then(res => (res && res.ok) ? res.json() : null)
+                    .catch(() => null)
+                    .then(data => ({ topic, data }))
+            );
         }
-        // Resolve all page requests in parallel
-        const pageResults = await Promise.all(pagePromises);
-        let topicBatchAdded = 0;
-        pageResults.forEach(data => {
-            if (!data) return;
-            const results = data.results || [];
-            results.forEach(book => {
-                const entry = buildGutenbergBookEntry(book);
-                if (!appState.scrapedIds.has(entry.id)) {
-                    appState.catalog.push(entry);
-                    appState.scrapedIds.add(entry.id);
-                    topicBatchAdded++;
-                    totalAdded++;
-                }
-            });
-        });
-        // UI update after each topic completes
-        syncedCount.textContent = appState.catalog.length;
-        scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] 📥 Topic "${topic}" loaded ${topicBatchAdded} new books (total: ${appState.catalog.length})`;
-        renderGenreFilters();
-        filterAndSortBooks();
     }
 
-    // Cache the catalog in localStorage so next visit is instant
-    try {
-        const cachePayload = JSON.stringify(appState.catalog.map(b => ({
-            ...b, isFullyLoaded: false // don't cache full text
-        })));
-        localStorage.setItem('lovestruck_catalog_cache', cachePayload);
-        localStorage.setItem('lovestruck_catalog_version', Date.now().toString());
-    } catch (cacheErr) {
-        console.warn("Catalog cache write failed (storage full?):", cacheErr);
-    }
-
-    scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] ✅ Fast-sync complete! ${totalAdded} new novels added — total library: ${appState.catalog.length} books.`;
-    renderGenreFilters();
-    filterAndSortBooks();
-}
-    const TOPICS   = ['romance', 'love', 'courtship', 'marriage', 'woman'];
-    const MAX_PAGES = 6;   // 6 pages × 32 books × 5 topics ≈ 960 books
-    let totalAdded  = 0;
-
-    scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] 📡 Starting mass-sync: loading 800+ romance novels…`;
-
-    for (const topic of TOPICS) {
-        let nextUrl = `https://gutendex.com/books/?topic=${encodeURIComponent(topic)}&page=1`;
-        let page    = 0;
-
-        while (nextUrl && page < MAX_PAGES) {
-            try {
-                const res = await fetchWithRetry(nextUrl);
-                if (!res.ok) break;
-                const data = await res.json();
-                const results = data.results || [];
-
-                let batchAdded = 0;
-                results.forEach(book => {
-                    const entry = buildGutenbergBookEntry(book);
-                    if (!appState.scrapedIds.has(entry.id)) {
-                        appState.catalog.push(entry);
-                        appState.scrapedIds.add(entry.id);
-                        batchAdded++;
-                        totalAdded++;
-                    }
-                });
-
-                page++;
-                nextUrl = data.next || null;   // Gutendex supplies the next-page URL
-
-                // Update UI after each page batch
-                syncedCount.textContent = appState.catalog.length;
-                scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] 📥 Topic "${topic}" — page ${page}: loaded ${batchAdded} new books (total: ${appState.catalog.length})`;
-                renderGenreFilters();
-                filterAndSortBooks();
-
-                // Short pause so the browser doesn't freeze
-                await new Promise(r => setTimeout(r, 300));
-
-            } catch (err) {
-                console.warn(`Gutenberg page fetch failed (topic=${topic}, page=${page}):`, err);
-                break;
+    // Resolve all requests in parallel
+    const pageResults = await Promise.all(allPagePromises);
+    const topicCounts = {};
+    pageResults.forEach(({ topic, data }) => {
+        if (!data) return;
+        const results = data.results || [];
+        results.forEach(book => {
+            const entry = buildGutenbergBookEntry(book);
+            if (!appState.scrapedIds.has(entry.id)) {
+                appState.catalog.push(entry);
+                appState.scrapedIds.add(entry.id);
+                totalAdded++;
+                topicCounts[topic] = (topicCounts[topic] || 0) + 1;
             }
-        }
-    }
+        });
+    });
 
-    // Cache the catalog in localStorage so next visit is instant
+    // Update UI once after all processing
+    syncedCount.textContent = appState.catalog.length;
+    scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] ✅ Ultra‑fast sync complete! Added ${totalAdded} new books across topics – total library: ${appState.catalog.length}`;
+    renderGenreFilters();
+    filterAndSortBooks();
+
+    // Cache the catalog for future loads
     try {
-        const cachePayload = JSON.stringify(appState.catalog.map(b => ({
-            ...b, isFullyLoaded: false  // don't cache full text
-        })));
+        const cachePayload = JSON.stringify(appState.catalog.map(b => ({ ...b, isFullyLoaded: false })));
         localStorage.setItem('lovestruck_catalog_cache', cachePayload);
         localStorage.setItem('lovestruck_catalog_version', Date.now().toString());
     } catch (cacheErr) {
         console.warn("Catalog cache write failed (storage full?):", cacheErr);
     }
 
-    scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] ✅ Mass-sync complete! ${totalAdded} new novels added — total library: ${appState.catalog.length} books.`;
-    renderGenreFilters();
-    filterAndSortBooks();
+
+    
+
+    
 }
 
 // Clean Gutenberg author names (e.g. "Austen, Jane" to "Jane Austen")
