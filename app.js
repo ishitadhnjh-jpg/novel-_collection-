@@ -1802,9 +1802,8 @@ window.onload = () => {
     runScraperConsole();
     startNewReleasesScraperSimulator();
     
-    // Fetch live romance books from Project Gutenberg
-    // Runs asynchronously so the page displays instantly from Cache, then populates in real-time
-    setTimeout(fetchGutenbergRomance, 1000);
+    // Fetch 800+ live romance books from Project Gutenberg (caches in local storage)
+    setTimeout(load800GutenbergBooks, 1000);
     
     // Fetch newly released romance novels from Google Books API
     // Automatically auto-detects newly released and future romance novels!
@@ -1822,20 +1821,11 @@ function downloadFullGutenbergPDF(book) {
     // Extract Gutenberg book ID using mapping helper
     const gutenbergId = getGutenbergId(book.id);
     
-    // Construct public cache text file URL
-    const textUrl = `https://www.gutenberg.org/cache/epub/${gutenbergId}/pg${gutenbergId}.txt`;
-    
-    // CORS bypass proxy
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(textUrl)}`;
-    
-    fetch(proxyUrl)
-        .then(response => {
-            if (!response.ok) throw new Error("CORS Proxy retrieval failed");
-            downloadStatusText.textContent = `Downloading full book text...`;
-            downloadProgressPercentage.textContent = '25%';
-            downloadProgressFill.style.width = '25%';
-            return response.text();
-        })
+    downloadStatusText.textContent = `Downloading full book text...`;
+    downloadProgressPercentage.textContent = '25%';
+    downloadProgressFill.style.width = '25%';
+
+    fetchFullTextWithFallback(gutenbergId)
         .then(fullText => {
             downloadStatusText.textContent = `Compiling pages (please wait)...`;
             downloadProgressPercentage.textContent = '50%';
@@ -2058,17 +2048,7 @@ async function fetchGoogleBooksRomance() {
                 downloadUrlEpub: "#", // Modern copyrighted book
                 downloadUrlPdf: "#",
                 googleBooksLink: infoLink, // link to buy/preview
-                chapters: [
-                    {
-                        title: "Chapter 1 Preview",
-                        content: [
-                            `This newly released novel is copyrighted by the author and publisher. A complete text preview is available via Google Books.`,
-                            `You can read a detailed preview and purchase the book directly by clicking the link in the synopsis details:`,
-                            `Google Books Page: ${infoLink}`,
-                            `Summary: ${synopsis.substring(0, 300)}...`
-                        ]
-                    }
-                ]
+                chapters: generateCopyrightedBookChapters(volumeInfo.title, authors.join(", "), synopsis)
             });
             
             appState.scrapedIds.add(idStr);
@@ -2142,11 +2122,7 @@ function getGutenbergId(bookId) {
 }
 
 async function fetchFullGutenbergText(gutenbergId) {
-    const textUrl = `https://www.gutenberg.org/cache/epub/${gutenbergId}/pg${gutenbergId}.txt`;
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(textUrl)}`;
-    const response = await fetch(proxyUrl);
-    if (!response.ok) throw new Error("Failed to fetch full text");
-    return await response.text();
+    return await fetchFullTextWithFallback(gutenbergId);
 }
 
 function parseGutenbergChapters(fullText) {
@@ -2425,17 +2401,7 @@ async function searchNovelsOnline(query) {
                     downloadUrlEpub: "#",
                     downloadUrlPdf: "#",
                     googleBooksLink: infoLink,
-                    chapters: [
-                        {
-                            title: "Chapter 1 Preview",
-                            content: [
-                                `This newly released novel is copyrighted by the author and publisher. A complete text preview is available via Google Books.`,
-                                `You can read a detailed preview and purchase the book directly by clicking the link in the synopsis details:`,
-                                `Google Books Page: ${infoLink}`,
-                                `Summary: ${synopsis.substring(0, 300)}...`
-                            ]
-                        }
-                    ]
+                    chapters: generateCopyrightedBookChapters(volumeInfo.title, authors.join(", "), synopsis)
                 });
                 
                 appState.scrapedIds.add(idStr);
