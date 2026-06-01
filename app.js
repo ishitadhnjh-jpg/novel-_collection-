@@ -460,103 +460,205 @@ function runScraperConsole() {
     }, 7000);
 }
 
-// Fetch romance books from Gutenberg (via Gutendex API)
+// Fetch romance books from Gutenberg (via Gutendex API) — single page fallback
 async function fetchGutenbergRomance() {
-    try {
-        scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] Fetching real romance books from Project Gutenberg API...`;
-        
-        // Fetch books from gutendex API with romance topic
-        const response = await fetch('https://gutendex.com/books/?topic=romance');
-        if (!response.ok) throw new Error("Gutenberg server returned error response");
-        
-        const data = await response.json();
-        const results = data.results || [];
-        
-        let addedCount = 0;
-        
-        results.forEach(book => {
-            const idStr = `gutenberg-${book.id}`;
-            
-            // Check if already in our catalog
-            if (appState.scrapedIds.has(idStr)) return;
-            
-            // Map the Gutenberg record into our clean database format
-            const authorObj = book.authors[0] || { name: "Unknown Author", birth_year: null };
-            
-            // Determine romance subgenre based on subjects or randomly to distribute
-            let mappedSubgenre = "Historical"; // Default for Gutenberg classics
-            const subjectsJoined = (book.subjects || []).join(' ').toLowerCase();
-            
-            if (subjectsJoined.includes('gothic') || subjectsJoined.includes('ghost') || subjectsJoined.includes('mystery')) {
-                mappedSubgenre = "Gothic";
-            } else if (subjectsJoined.includes('fantasy') || subjectsJoined.includes('magic') || subjectsJoined.includes('fairy')) {
-                mappedSubgenre = "Fantasy/Paranormal";
-            } else if (subjectsJoined.includes('science fiction') || subjectsJoined.includes('future')) {
-                mappedSubgenre = "Sci-Fi";
-            } else if (subjectsJoined.includes('contemporary') || subjectsJoined.includes('modern')) {
-                mappedSubgenre = "Contemporary";
-            }
-            
-            // Extract download links
-            const epubLink = book.formats['application/epub+zip'] || "#";
-            const pdfLink = book.formats['application/pdf'] || book.formats['text/html'] || "#"; // Fallback to html reader if pdf missing
-            
-            // Generate standard summary if none is present (Gutenberg doesn't provide summaries)
-            const generatedSynopsis = `A beautiful classic romance written by ${authorObj.name}. Set in a historical era, it explores themes of courtship, family expectations, and the emotional struggles of love. It remains highly popular, with over ${book.download_count} direct downloads from Project Gutenberg. Listed under: ${book.subjects.slice(0, 3).join(', ')}.`;
-            
-            // Assemble Trope Tags based on subjects
-            let tropes = ["Classics", "Slow Burn", "Historical Setting"];
-            if (mappedSubgenre === "Gothic") tropes.push("Gothic Secrets", "Dark Secrets");
-            if (mappedSubgenre === "Fantasy/Paranormal") tropes.push("Magical Worlds", "Fate");
-            if (book.languages.includes('fr')) tropes.push("French Classic");
-            
-            // Push to catalog
-            appState.catalog.push({
-                id: idStr,
-                title: book.title,
-                author: cleanAuthorName(authorObj.name),
-                year: authorObj.birth_year ? authorObj.birth_year + 30 : 1880, // rough guess of writing year
-                language: book.languages[0] || "en",
-                genres: ["Classics", "Historical"],
-                subgenre: mappedSubgenre,
-                rating: parseFloat((4.4 + Math.random() * 0.5).toFixed(1)), // rating between 4.4 and 4.9
-                popularity: book.download_count || 1200,
-                pages: Math.floor(200 + Math.random() * 250),
-                quickHook: `Classic romantic literature. A beautiful story about love and courtship in the 19th century.`,
-                synopsis: generatedSynopsis,
-                tropes: tropes,
-                downloadUrlEpub: epubLink,
-                downloadUrlPdf: pdfLink,
-                chapters: [
-                    {
-                        title: "Chapter I",
-                        content: [
-                            "The text of this public domain novel is ready for download in full EPUB and PDF formats.",
-                            "Click the 'Download EPUB' or 'Download PDF' button in the sidebar to download the complete book from Project Gutenberg's servers to read on your device.",
-                            "“It is a story of love, society, and human destiny,” wrote the reviewer. “A work that continues to capture hearts across centuries.”"
-                        ]
-                    }
-                ]
-            });
-            
-            appState.scrapedIds.add(idStr);
-            addedCount++;
-        });
-        
-        syncedCount.textContent = appState.catalog.length;
-        scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] Live Sync Completed: Successfully fetched and imported ${addedCount} romance books from Project Gutenberg!`;
-        
-        // Update counts in sidebar filter and render
-        renderGenreFilters();
-        filterAndSortBooks();
-        
-    } catch (error) {
-        console.error("Gutenberg Fetch Failed: ", error);
-        scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] Sync Warning: Gutenberg API rate-limited. Running with cache storage.`;
-        syncedCount.textContent = appState.catalog.length;
-        renderGenreFilters();
-        filterAndSortBooks();
+    await load800GutenbergBooks();
+}
+
+// ─── MULTI-PROXY FALLBACK TEXT FETCHER ─────────────────────────────────────
+// Tries 3 different CORS proxies in order. If one fails it moves to the next.
+async function fetchFullTextWithFallback(gutenbergId) {
+    const textUrl = `https://www.gutenberg.org/cache/epub/${gutenbergId}/pg${gutenbergId}.txt`;
+    const altUrl  = `https://www.gutenberg.org/files/${gutenbergId}/${gutenbergId}-0.txt`;
+
+    const proxies = [
+        u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+        u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+        u => `https://thingproxy.freeboard.io/fetch/${u}`
+    ];
+
+    for (const makeProxy of proxies) {
+        for (const src of [textUrl, altUrl]) {
+            try {
+                const res = await fetch(makeProxy(src), { signal: AbortSignal.timeout(20000) });
+                if (res.ok) {
+                    const text = await res.text();
+                    if (text && text.length > 5000) return text;   // valid book text
+                }
+            } catch (_) { /* try next */ }
+        }
     }
+    throw new Error(`Could not fetch text for Gutenberg ID ${gutenbergId} from any proxy.`);
+}
+
+// ─── BUILD A SINGLE GUTENBERG CATALOG ENTRY ───────────────────────────────
+function buildGutenbergBookEntry(book) {
+    const authorObj    = book.authors[0] || { name: "Unknown Author", birth_year: null };
+    const subjectsText = (book.subjects || []).join(' ').toLowerCase();
+
+    let subgenre = "Historical";
+    if (subjectsText.includes('gothic') || subjectsText.includes('ghost') || subjectsText.includes('mystery')) subgenre = "Gothic";
+    else if (subjectsText.includes('fantasy') || subjectsText.includes('magic') || subjectsText.includes('fairy')) subgenre = "Fantasy/Paranormal";
+    else if (subjectsText.includes('science fiction') || subjectsText.includes('future')) subgenre = "Sci-Fi";
+    else if (subjectsText.includes('contemporary') || subjectsText.includes('modern')) subgenre = "Contemporary";
+
+    const epubLink = book.formats['application/epub+zip'] || "#";
+    const pdfLink  = book.formats['application/pdf']      || book.formats['text/html'] || "#";
+
+    const synopsis = `A beloved classic romance by ${cleanAuthorName(authorObj.name)}. `
+        + `Set in a historical era, it explores courtship, family expectations, and the profound struggles of love. `
+        + `Over ${(book.download_count || 0).toLocaleString()} readers have downloaded it from Project Gutenberg. `
+        + `Subjects: ${(book.subjects || []).slice(0, 4).join('; ')}.`;
+
+    let tropes = ["Classics", "Slow Burn", "Historical Setting"];
+    if (subgenre === "Gothic")            tropes.push("Gothic Secrets", "Dark Atmosphere");
+    if (subgenre === "Fantasy/Paranormal") tropes.push("Magical Worlds", "Fated Love");
+    if (book.languages && book.languages.includes('fr')) tropes.push("French Classic");
+
+    return {
+        id:              `gutenberg-${book.id}`,
+        title:           book.title,
+        author:          cleanAuthorName(authorObj.name),
+        year:            authorObj.birth_year ? authorObj.birth_year + 30 : 1880,
+        language:        (book.languages && book.languages[0]) || "en",
+        genres:          ["Classics", "Historical"],
+        subgenre,
+        rating:          parseFloat((4.4 + Math.random() * 0.5).toFixed(1)),
+        popularity:      book.download_count || 1200,
+        pages:           Math.floor(200 + Math.random() * 250),
+        quickHook:       `Classic romance — a timeless story of love, society, and destiny.`,
+        synopsis,
+        tropes,
+        downloadUrlEpub: epubLink,
+        downloadUrlPdf:  pdfLink,
+        isFullyLoaded:   false,   // will be fetched on demand when reader opens
+        chapters: [
+            {
+                title:   "Open to Read Full Book",
+                content: [
+                    "This is a complete public-domain novel.",
+                    "Press the ▶ Read button above to open the full book directly in the reader.",
+                    "All chapters will be loaded automatically from Project Gutenberg.",
+                    "You can also click ⬇ Download EPUB or ⬇ Download PDF to save the whole book."
+                ]
+            }
+        ]
+    };
+}
+
+// ─── GENERATE PREVIEW CHAPTERS FOR COPYRIGHTED MODERN BOOKS ──────────────
+function generateCopyrightedBookChapters(title, author, synopsis) {
+    const s = synopsis || "";
+    const mid = Math.floor(s.length / 2);
+    const part1 = s.substring(0, Math.min(400, mid)).trim();
+    const part2 = s.substring(Math.min(400, mid), Math.min(800, s.length)).trim();
+    const part3 = s.substring(Math.min(800, s.length)).trim();
+
+    return [
+        {
+            title: "Chapter I — The Spark",
+            content: [
+                `📖  "${title}" by ${author}`,
+                ``,
+                part1 || "The story begins with an unexpected encounter that changes everything for the protagonist.",
+                ``,
+                `The opening chapter introduces us to a world filled with tension, longing, and the promise of something extraordinary. The air between the characters crackles with unspoken words as they navigate the complex dance of first impressions and hidden desires.`,
+                ``,
+                `Their worlds are about to collide in ways neither could have anticipated, setting the stage for a romance that will challenge everything they thought they knew about love.`
+            ]
+        },
+        {
+            title: "Chapter II — Rising Tension",
+            content: [
+                part2 || "As the story deepens, obstacles and secrets begin to surface.",
+                ``,
+                `The connection between the characters deepens despite every force working against them. Each stolen glance, each carefully chosen word carries the weight of everything left unsaid. The slow burn of their developing relationship is both exquisite and agonizing.`,
+                ``,
+                `External pressures mount — family expectations, social constraints, past wounds — but the pull between them only grows stronger. This is the stage where the real emotional complexity of the story unfolds.`
+            ]
+        },
+        {
+            title: "Chapter III — The Turning Point",
+            content: [
+                part3 || "Everything comes to a head as the characters must make choices that will define their future.",
+                ``,
+                `The climactic tension of the story reaches its peak. Old wounds are reopened, truths are revealed, and the characters must decide whether love is worth the cost of vulnerability.`,
+                ``,
+                `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+                `📚  This is a preview summary of "${title}".`,
+                `The full book is available on Google Books and major retailers.`,
+                `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
+            ]
+        }
+    ];
+}
+
+// ─── LOAD 800+ BOOKS FROM GUTENBERG (paginated) ────────────────────────────
+// Gutendex returns 32 books per page. We fetch up to 30 pages (≈960 books)
+// across romance, love, and courtship topics, inserting them in small batches
+// so the UI stays responsive throughout.
+async function load800GutenbergBooks() {
+    const TOPICS   = ['romance', 'love', 'courtship', 'marriage', 'woman'];
+    const MAX_PAGES = 6;   // 6 pages × 32 books × 5 topics ≈ 960 books
+    let totalAdded  = 0;
+
+    scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] 📡 Starting mass-sync: loading 800+ romance novels…`;
+
+    for (const topic of TOPICS) {
+        let nextUrl = `https://gutendex.com/books/?topic=${encodeURIComponent(topic)}&page=1`;
+        let page    = 0;
+
+        while (nextUrl && page < MAX_PAGES) {
+            try {
+                const res  = await fetch(nextUrl);
+                if (!res.ok) break;
+                const data = await res.json();
+                const results = data.results || [];
+
+                let batchAdded = 0;
+                results.forEach(book => {
+                    const entry = buildGutenbergBookEntry(book);
+                    if (!appState.scrapedIds.has(entry.id)) {
+                        appState.catalog.push(entry);
+                        appState.scrapedIds.add(entry.id);
+                        batchAdded++;
+                        totalAdded++;
+                    }
+                });
+
+                page++;
+                nextUrl = data.next || null;   // Gutendex supplies the next-page URL
+
+                // Update UI after each page batch
+                syncedCount.textContent = appState.catalog.length;
+                scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] 📥 Topic "${topic}" — page ${page}: loaded ${batchAdded} new books (total: ${appState.catalog.length})`;
+                renderGenreFilters();
+                filterAndSortBooks();
+
+                // Short pause so the browser doesn't freeze
+                await new Promise(r => setTimeout(r, 300));
+
+            } catch (err) {
+                console.warn(`Gutenberg page fetch failed (topic=${topic}, page=${page}):`, err);
+                break;
+            }
+        }
+    }
+
+    // Cache the catalog in localStorage so next visit is instant
+    try {
+        const cachePayload = JSON.stringify(appState.catalog.map(b => ({
+            ...b, isFullyLoaded: false  // don't cache full text
+        })));
+        localStorage.setItem('lovestruck_catalog_cache', cachePayload);
+        localStorage.setItem('lovestruck_catalog_version', Date.now().toString());
+    } catch (cacheErr) {
+        console.warn("Catalog cache write failed (storage full?):", cacheErr);
+    }
+
+    scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] ✅ Mass-sync complete! ${totalAdded} new novels added — total library: ${appState.catalog.length} books.`;
+    renderGenreFilters();
+    filterAndSortBooks();
 }
 
 // Clean Gutenberg author names (e.g. "Austen, Jane" to "Jane Austen")
