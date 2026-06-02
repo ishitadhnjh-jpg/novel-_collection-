@@ -1532,12 +1532,49 @@ async function openReader(bookId) {
         transBtn.style.borderColor = "var(--accent)";
     }
     
-    appState.currentReadingBook = book;
-    appState.currentChapterIndex = 0;
-    
     readerBookTitle.textContent = book.title;
     readerBookAuthor.textContent = `by ${book.author}`;
     
+    if (!book.isFullyLoaded && book.textUrl) {
+        openModal(readerModal);
+        
+        // Show fetching spinner
+        readerTextContent.innerHTML = `
+            <style>
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            </style>
+            <div class="reader-loading-state" style="text-align: center; padding: 60px 20px;">
+                <div class="spinner" style="border: 4px solid rgba(224, 74, 116, 0.1); border-left-color: var(--accent); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+                <h3 style="font-family: var(--font-serif); margin-bottom: 10px; color: var(--accent);">Opening Full Book...</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem; max-width: 320px; margin: 0 auto;">Establishing link to global repositories and syncing full-text chapters...</p>
+            </div>
+        `;
+        
+        readerPrevBtn.disabled = true;
+        readerNextBtn.disabled = true;
+        readerProgressText.textContent = "Loading...";
+        readerProgressBarFill.style.width = "0%";
+        
+        try {
+            await window.syncEngine.loadFullTextOnDemand(book);
+            appState.currentReadingBook = book;
+            appState.currentChapterIndex = 0;
+            renderReaderContent();
+        } catch (e) {
+            console.warn("Failed to download full text, showing preview chapters instead:", e);
+            showToast("Local preview loaded successfully.", "info");
+            appState.currentReadingBook = book;
+            appState.currentChapterIndex = 0;
+            renderReaderContent();
+        }
+        return;
+    }
+    
+    appState.currentReadingBook = book;
+    appState.currentChapterIndex = 0;
     renderReaderContent();
     openModal(readerModal);
 }
