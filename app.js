@@ -1875,24 +1875,69 @@ window.onload = () => {
     loadState();
     bindEvents();
     
-    // Seed initial display of offline catalog (920 titles)
-    syncedCount.textContent = appState.catalog.length;
-    renderHeroSpotlight();
-    renderGenreFilters();
-    filterAndSortBooks();
-    
     // Run background decorative hearts
     createFloatingHearts();
     
-    // Run background vault logs & simulator checks
-    runScraperConsole();
-    startNewReleasesScraperSimulator();
-    
-    // Show premium offline loading notice in console
-    setTimeout(() => {
-        scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] ✅ Romance Vault Loaded! 920 offline titles synced and ready to read.`;
-        showToast("920 Premium Offline Novels Synced!", "success");
-    }, 1000);
+    // Initialize IndexedDB Lovestruck Vault
+    window.dbManager.init().then(async () => {
+        // Load all dynamically synced novels from IndexedDB
+        const syncedNovels = await window.dbManager.getAllNovels();
+        
+        // Merge synced novels into catalog
+        syncedNovels.forEach(novel => {
+            if (!appState.scrapedIds.has(novel.id)) {
+                appState.catalog.push(novel);
+                appState.scrapedIds.add(novel.id);
+            }
+        });
+        
+        // Update display count
+        syncedCount.textContent = appState.catalog.length;
+        renderHeroSpotlight();
+        renderGenreFilters();
+        filterAndSortBooks();
+        
+        // Start background Releases check
+        startNewReleasesScraperSimulator();
+        
+        // Set up Active Online Sync Engine
+        window.syncEngine.registerCallbacks(
+            // Log Callback
+            (msg) => {
+                const timeStamp = new Date().toLocaleTimeString();
+                scraperLogText.textContent = `[${timeStamp}] ${msg}`;
+            },
+            // Novel Synced Callback
+            (novel) => {
+                if (!appState.scrapedIds.has(novel.id)) {
+                    appState.catalog.push(novel);
+                    appState.scrapedIds.add(novel.id);
+                    
+                    syncedCount.textContent = appState.catalog.length;
+                    showToast(`Full novel synced: "${novel.title}"!`, "success");
+                    
+                    // Refresh filters and grid dynamically in real-time
+                    renderGenreFilters();
+                    filterAndSortBooks();
+                }
+            }
+        );
+        
+        // Launch Active Background Sync automatically
+        setTimeout(() => {
+            window.syncEngine.startActiveSync();
+        }, 1500);
+        
+    }).catch(err => {
+        console.error("Vault failed to initialize:", err);
+        showToast("Storage vault error. Running offline mode.", "warning");
+        
+        syncedCount.textContent = appState.catalog.length;
+        renderHeroSpotlight();
+        renderGenreFilters();
+        filterAndSortBooks();
+        runScraperConsole();
+    });
 };
 
 // 16. DYNAMIC FULL BOOK PDF GENERATOR (CORS BYPASS & CHUNKED RENDERER)
