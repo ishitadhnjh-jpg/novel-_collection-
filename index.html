@@ -6,7 +6,7 @@
     
     <!-- SEO Optimization -->
     <title>Lovestruck Hub — Escape Into Romance</title>
-    <meta name="description" content="Discover, preview, and download a curated selection of beautiful romantic novels. Querying live Gutenberg catalogs to bring you the best in contemporary, historical, fantasy, paranormal, and dark romance.">
+    <meta name="description" content="Discover, preview, and download a curated selection of beautiful romantic novels. A premium offline library of over 900+ titles in contemporary, historical, fantasy, paranormal, and dark romance.">
     <meta name="keywords" content="romance novels, free romance books, romantic fiction, download romance books, pride and prejudice, jane austen, e-reader, fantasy romance, dark romance">
     <meta name="author" content="Lovestruck Hub">
     
@@ -131,17 +131,17 @@
         <!-- Live API Scraper / Sync Monitor -->
         <section class="live-scraper-dashboard glass-panel" id="scraperDashboard">
             <div class="scraper-status-group">
-                <div class="status-dot"></div>
-                <span><strong>Live Sync Engine:</strong> ACTIVE</span>
+                <div class="status-dot" style="background-color: var(--gold); box-shadow: 0 0 10px var(--gold-glow);"></div>
+                <span><strong>Romance Vault:</strong> OFFLINE SYNCED</span>
             </div>
             
             <div class="scraper-log-window" id="scraperLogWindow">
-                <span class="log-prefix">&gt;_ SCANNER:</span>
-                <span class="log-text" id="scraperLogText">Initializing romance databases sync...</span>
+                <span class="log-prefix" style="color: var(--gold);">&gt;_ VAULT:</span>
+                <span class="log-text" id="scraperLogText">Secured offline romance catalog loaded. 900+ novels verified and ready...</span>
             </div>
             
-            <div style="flex-shrink: 0; color: var(--gold); font-weight: 700;">
-                Synced: <span id="syncedCount">0</span> romance titles
+            <div style="flex-shrink: 0; color: var(--accent); font-weight: 700;">
+                Available: <span id="syncedCount">900+</span> titles
             </div>
         </section>
 
@@ -299,6 +299,7 @@
                             <p class="details-synopsis" id="modalSynopsis">
                                 Book synopsis loading from repository databases...
                             </p>
+                            <div id="modalChapterPreview"></div>
                         </div>
 
                         <!-- Tropes & Vibes -->
@@ -420,7 +421,9 @@
 
     <!-- core JavaScript script -->
     <script src="fetchConcurrency.js"></script>
-<script src="pdfHelper.js"></script>
-<script src="app.js"></script>
+    <script src="pdfHelper.js"></script>
+    <script src="novelGenerator.js"></script>
+    <script src="chapterSummary.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>

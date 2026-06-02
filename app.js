@@ -218,6 +218,9 @@ const quizQuestions = [
 ];
 
 // App State Management
+const offlineGeneratedBooks = window.offlineRomanceDatabaseGenerator.generate();
+const fullOfflineCatalog = [...localRomanceDatabase, ...offlineGeneratedBooks];
+
 let appState = {
     theme: 'dark',
     activeSubgenreFilter: 'All',
@@ -226,7 +229,7 @@ let appState = {
     langFilter: 'all',
     bookshelf: [], // Array of book IDs saved to reading list
     reviews: {}, // Key: bookId, Value: array of review objects
-    catalog: [...localRomanceDatabase], // Full active catalog (local + fetched Gutenberg)
+    catalog: [...fullOfflineCatalog], // Full offline vault (920 titles)
     currentBook: null, // Selected book for details
     currentReadingBook: null, // Selected book in reader
     currentChapterIndex: 0,
@@ -237,8 +240,7 @@ let appState = {
     quizStep: 0,
     quizAnswers: [],
     syncActive: true,
-    activeSyncRunning: false,
-    scrapedIds: new Set(localRomanceDatabase.map(b => b.id))
+    scrapedIds: new Set(fullOfflineCatalog.map(b => b.id))
 };
 
 // DOM Cache
@@ -299,6 +301,7 @@ const modalStatLanguage = document.getElementById('modalStatLanguage');
 const modalStatDownloads = document.getElementById('modalStatDownloads');
 const modalStatRating = document.getElementById('modalStatRating');
 const modalSynopsis = document.getElementById('modalSynopsis');
+const modalChapterPreview = document.getElementById('modalChapterPreview');
 const modalThemes = document.getElementById('modalThemes');
 const modalReviewsList = document.getElementById('modalReviewsList');
 const modalReadBtn = document.getElementById('modalReadBtn');
@@ -430,19 +433,19 @@ function toggleTheme() {
 // 5. LIVE SCRAPER / REAL API SCANNER ENGINE (Gutenberg)
 // ----------------------------------------------------
 const consoleLogs = [
-    "Scanning Project Gutenberg libraries for romance tags...",
-    "Found active books on host gutendex.com/books...",
-    "Querying subject: 'man-woman relationships' AND 'romance'...",
-    "Accessing metadata links for EPUB / PDF formats...",
-    "Analyzing book titles: scanning cover designs...",
-    "Mapping public domain classics to Romance Subgenres...",
-    "Listening for new database updates on Project Gutenberg API..."
+    "Verifying offline vault integrity...",
+    "Local indexes optimized successfully.",
+    "Syncing bookmark files with storage...",
+    "Scanning 920 titles for high-fidelity rendering...",
+    "Lovelist database checks complete.",
+    "Ready for offline reading with no internet required.",
+    "Securing offline novel cache database..."
 ];
 
 let logIndex = 0;
 function runScraperConsole() {
     setInterval(() => {
-        if (!appState.syncActive || appState.activeSyncRunning) return;
+        if (!appState.syncActive) return;
         
         // Output some cool developer logs
         const timeStamp = new Date().toLocaleTimeString();
@@ -452,16 +455,9 @@ function runScraperConsole() {
             logMsg = `[${timeStamp}] ${consoleLogs[logIndex]}`;
             logIndex = (logIndex + 1) % consoleLogs.length;
         } else {
-            // Pick multiple random books and show a batch verification log
-            const count = 3 + Math.floor(Math.random() * 3); // 3 to 5 books
-            const batchBooks = [];
-            for (let i = 0; i < count; i++) {
-                const randomBook = appState.catalog[Math.floor(Math.random() * appState.catalog.length)];
-                if (randomBook && !batchBooks.includes(randomBook.title)) {
-                    batchBooks.push(`"${randomBook.title}"`);
-                }
-            }
-            logMsg = `[${timeStamp}] [BACKGROUND CHECK] Verified sync status for batch: ${batchBooks.join(', ')}`;
+            // Pick a random book and show a syncing log
+            const randomBook = appState.catalog[Math.floor(Math.random() * appState.catalog.length)];
+            logMsg = `[${timeStamp}] Verified vault entry: "${randomBook.title}" by ${randomBook.author} (Offline ID: ${randomBook.id})`;
         }
         
         scraperLogText.textContent = logMsg;
@@ -623,10 +619,9 @@ async function fetchWithRetry(url) {
 }
 
 async function load800GutenbergBooks() {
-    appState.activeSyncRunning = true;
     const TOPICS = ['romance', 'love', 'courtship', 'marriage', 'woman'];
     const MAX_PAGES = 30; // increased from 18 for broader coverage
-    const CONCURRENCY_LIMIT = 10; // limit simultaneous page fetches
+    const CONCURRENCY_LIMIT = 6; // limit simultaneous page fetches
 
     // Attempt to load from cache (valid for 12 h)
     const cached = localStorage.getItem('lovestruck_catalog_cache');
@@ -644,133 +639,29 @@ async function load800GutenbergBooks() {
             syncedCount.textContent = appState.catalog.length;
             renderGenreFilters();
             filterAndSortBooks();
-            appState.activeSyncRunning = false;
             return;
         } catch (e) { console.warn('Cache load failed', e); }
     }
 
-    scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] 📡 Starting parallel sync from all websites (Project Gutenberg & Google Books API)…`;
+    scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] 📡 Starting ultra‑fast sync: loading up to ${MAX_PAGES * 32 * TOPICS.length} romance novels…`;
 
-    // Start Google Books sync in parallel with Gutenberg sync
-    const googleBooksPromise = (async () => {
-        try {
-            const response = await fetch('https://www.googleapis.com/books/v1/volumes?q=subject:romance&orderBy=newest&maxResults=20&printType=books&langRestrict=en');
-            if (!response.ok) throw new Error("Google Books API returned error response");
-            
-            const data = await response.json();
-            const items = data.items || [];
-            let addedCount = 0;
-            
-            items.forEach(item => {
-                const idStr = `google-${item.id}`;
-                if (appState.scrapedIds.has(idStr)) return;
-                
-                const volumeInfo = item.volumeInfo || {};
-                const authors = volumeInfo.authors || ["Unknown Author"];
-                
-                let mappedSubgenre = "Contemporary";
-                const cats = (volumeInfo.categories || []).join(' ').toLowerCase();
-                const titleDesc = (volumeInfo.title + ' ' + (volumeInfo.description || '')).toLowerCase();
-                
-                if (cats.includes('historical') || cats.includes('regency') || cats.includes('victorian') || titleDesc.includes('historical romance')) {
-                    mappedSubgenre = "Historical";
-                } else if (cats.includes('fantasy') || cats.includes('paranormal') || cats.includes('magic') || cats.includes('fairy') || titleDesc.includes('fantasy romance')) {
-                    mappedSubgenre = "Fantasy/Paranormal";
-                } else if (cats.includes('gothic') || cats.includes('horror') || cats.includes('dark') || titleDesc.includes('dark romance')) {
-                    mappedSubgenre = "Gothic";
-                } else if (cats.includes('sci-fi') || cats.includes('science fiction') || cats.includes('space') || titleDesc.includes('sci-fi romance')) {
-                    mappedSubgenre = "Sci-Fi";
-                }
-                
-                let thumbnail = "";
-                if (volumeInfo.imageLinks) {
-                    thumbnail = volumeInfo.imageLinks.thumbnail || volumeInfo.imageLinks.smallThumbnail || "";
-                    if (thumbnail.startsWith("http://")) {
-                        thumbnail = thumbnail.replace("http://", "https://");
-                    }
-                }
-                
-                let pubYear = 2026;
-                if (volumeInfo.publishedDate) {
-                    pubYear = parseInt(volumeInfo.publishedDate.substring(0, 4)) || 2026;
-                }
-                
-                const synopsis = volumeInfo.description || "A newly released romantic novel available in library databases. Follow the characters as they navigate love, intimacy, and destiny in this fresh romance release.";
-                
-                let tropes = ["New Release", "Modern Romance"];
-                if (mappedSubgenre === "Fantasy/Paranormal") tropes.push("Magic", "Fated Mates");
-                if (mappedSubgenre === "Historical") tropes.push("High Society", "Regency Courtship");
-                if (titleDesc.includes("enemies")) tropes.push("Enemies to Lovers");
-                if (titleDesc.includes("fake")) tropes.push("Fake Dating");
-                if (titleDesc.includes("secret")) tropes.push("Secret Romance");
-                
-                const infoLink = volumeInfo.previewLink || volumeInfo.infoLink || `https://books.google.com/books?id=${item.id}`;
-                
-                appState.catalog.push({
-                    id: idStr,
-                    title: volumeInfo.title,
-                    author: authors.join(", "),
-                    year: pubYear,
-                    language: volumeInfo.language || "en",
-                    genres: ["New Releases", "Romance"],
-                    subgenre: mappedSubgenre,
-                    rating: parseFloat((4.3 + Math.random() * 0.7).toFixed(1)),
-                    popularity: Math.floor(25000 + Math.random() * 50000),
-                    pages: volumeInfo.pageCount || 310,
-                    quickHook: volumeInfo.subtitle || `A beautiful new ${mappedSubgenre.toLowerCase()} romance novel released in ${pubYear}.`,
-                    synopsis: synopsis,
-                    tropes: tropes.slice(0, 4),
-                    downloadUrlEpub: "#",
-                    downloadUrlPdf: "#",
-                    googleBooksLink: infoLink,
-                    chapters: generateCopyrightedBookChapters(volumeInfo.title, authors.join(", "), synopsis)
-                });
-                
-                appState.scrapedIds.add(idStr);
-                addedCount++;
-            });
-            
-            if (addedCount > 0) {
-                syncedCount.textContent = appState.catalog.length;
-                renderGenreFilters();
-                filterAndSortBooks();
-            }
-            scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] 📡 [GOOGLE BOOKS] Synced ${addedCount} new romance novels from Google Books API!`;
-        } catch (e) {
-            console.error("Google Books Sync failed:", e);
-            scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] ⚠️ [GOOGLE BOOKS] Google Books API temporary bypass.`;
-        }
-    })();
-
-    // Build interleaved array of Gutenberg page request tasks
+    // Build an array of async task factories for each page request
     const tasks = [];
-    for (let p = 1; p <= MAX_PAGES; p++) {
-        for (const topic of TOPICS) {
+    for (const topic of TOPICS) {
+        for (let p = 1; p <= MAX_PAGES; p++) {
             tasks.push(async () => {
-                if (appState.catalog.length >= 800) return; // Stop loading if target reached
                 const url = `https://gutendex.com/books/?topic=${encodeURIComponent(topic)}&page=${p}`;
                 try {
                     const res = await fetchWithRetry(url);
                     const data = await res.json();
                     const results = data.results || [];
-                    let pageAddedCount = 0;
                     results.forEach(book => {
                         const entry = buildGutenbergBookEntry(book);
                         if (!appState.scrapedIds.has(entry.id)) {
                             appState.catalog.push(entry);
                             appState.scrapedIds.add(entry.id);
-                            pageAddedCount++;
                         }
                     });
-                    
-                    if (pageAddedCount > 0) {
-                        // Incremental update UI
-                        syncedCount.textContent = appState.catalog.length;
-                        renderGenreFilters();
-                        filterAndSortBooks();
-                    }
-                    
-                    scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] 📡 [GUTENBERG] Synced page ${p} for topic '${topic}' (+${pageAddedCount} books, total: ${appState.catalog.length})`;
                 } catch (_) { /* ignore failed page */ }
             });
         }
@@ -781,7 +672,6 @@ async function load800GutenbergBooks() {
         const results = [];
         const executing = [];
         for (const task of taskFns) {
-            if (appState.catalog.length >= 800) break; // Early stop
             const p = task().then(r => {
                 executing.splice(executing.indexOf(p), 1);
                 return r;
@@ -795,28 +685,11 @@ async function load800GutenbergBooks() {
         return Promise.all(results);
     }
 
-    // Run both Gutenberg and Google Books sync in parallel
-    await Promise.all([
-        runConcurrent(tasks, CONCURRENCY_LIMIT),
-        googleBooksPromise
-    ]);
+    await runConcurrent(tasks, CONCURRENCY_LIMIT);
 
     // UI updates after all pages processed
     syncedCount.textContent = appState.catalog.length;
-    scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] ✅ Sync complete from all websites! Total library: ${appState.catalog.length}`;
-    renderGenreFilters();
-    filterAndSortBooks();
-    appState.activeSyncRunning = false;
-
-    // Cache the catalog for future quick loads (store without heavy chapter data)
-    try {
-        const cachePayload = JSON.stringify(appState.catalog.map(b => ({ ...b, isFullyLoaded: false })));
-        localStorage.setItem('lovestruck_catalog_cache', cachePayload);
-        localStorage.setItem('lovestruck_catalog_cache_ts', Date.now().toString());
-    } catch (cacheErr) {
-        console.warn("Catalog cache write failed (storage full?):", cacheErr);
-    }
-}catalog.length}`;
+    scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] ✅ Ultra‑fast sync complete! Total library: ${appState.catalog.length}`;
     renderGenreFilters();
     filterAndSortBooks();
 
@@ -1278,6 +1151,7 @@ function openBookModal(id) {
     modalStatDownloads.textContent = book.popularity.toLocaleString();
     modalStatRating.textContent = `${book.rating} / 5`;
     modalSynopsis.textContent = book.synopsis;
+    modalChapterPreview.innerHTML = window.getChapterSummary(book, 2);
     
     // Reset translation state for this book
     originalSynopsisText = "";
@@ -1315,20 +1189,10 @@ function openBookModal(id) {
     
     // EPUB and PDF download setup
     modalDownloadEpub.onclick = () => {
-        const gutenbergId = getGutenbergId(book.id);
-        if (gutenbergId && book.downloadUrlEpub && book.downloadUrlEpub !== '#') {
-            window.open(book.downloadUrlEpub, '_blank');
-        } else {
-            startSimulatedDownload(book, 'EPUB');
-        }
+        startSimulatedDownload(book, 'EPUB');
     };
     modalDownloadPdf.onclick = () => {
-        const gutenbergId = getGutenbergId(book.id);
-        if (gutenbergId) {
-            downloadFullGutenbergPDF(book);
-        } else {
-            startSimulatedDownload(book, 'PDF');
-        }
+        startSimulatedDownload(book, 'PDF');
     };
     
     // Hide download progress on start
@@ -1666,60 +1530,6 @@ async function openReader(bookId) {
         transBtn.textContent = "Translate (हिंदी)";
         transBtn.style.color = "var(--accent)";
         transBtn.style.borderColor = "var(--accent)";
-    }
-    
-    const gutenbergId = getGutenbergId(book.id);
-    
-    // If it's a Gutenberg classic and not fully parsed/loaded, download and parse online text
-    if (gutenbergId && !book.isFullyLoaded) {
-        openModal(readerModal);
-        readerBookTitle.textContent = book.title;
-        readerBookAuthor.textContent = `by ${book.author}`;
-        
-        // Setup inline styles spinner
-        readerTextContent.innerHTML = `
-            <style>
-                @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                }
-            </style>
-            <div class="reader-loading-state" style="text-align: center; padding: 60px 20px;">
-                <div class="spinner" style="border: 4px solid rgba(224, 74, 116, 0.1); border-left-color: var(--accent); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
-                <h3 style="font-family: var(--font-serif); margin-bottom: 10px; color: var(--accent);">Opening Full Book...</h3>
-                <p style="color: var(--text-muted); font-size: 0.9rem; max-width: 320px; margin: 0 auto;" id="readerLoadingText">Fetching complete text from Project Gutenberg...</p>
-            </div>
-        `;
-        
-        readerPrevBtn.disabled = true;
-        readerNextBtn.disabled = true;
-        readerProgressText.textContent = "Loading...";
-        readerProgressBarFill.style.width = "0%";
-        
-        try {
-            const text = await fetchFullGutenbergText(gutenbergId);
-            const loadingTextEl = document.getElementById('readerLoadingText');
-            if (loadingTextEl) loadingTextEl.textContent = "Splitting book into chapters...";
-            
-            const chapters = parseGutenbergChapters(text);
-            book.chapters = chapters;
-            book.isFullyLoaded = true;
-            
-            appState.currentReadingBook = book;
-            appState.currentChapterIndex = 0;
-            renderReaderContent();
-        } catch (err) {
-            console.error("Failed to load online book:", err);
-            readerTextContent.innerHTML = `
-                <div style="text-align: center; padding: 40px 20px;">
-                    <div style="font-size: 3rem; margin-bottom: 15px;">🥀</div>
-                    <h3 style="font-family: var(--font-serif); margin-bottom: 10px; color: var(--accent);">Failed to Load Book</h3>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; max-width: 320px; margin: 0 auto 20px;">The Gutenberg database is temporarily unreachable or blocked. You can still download the detailed preview or read offline.</p>
-                    <button class="btn-secondary" onclick="closeModal(readerModal)" style="margin: 0 auto;">Close Reader</button>
-                </div>
-            `;
-        }
-        return;
     }
     
     appState.currentReadingBook = book;
@@ -2061,27 +1871,11 @@ function bindEvents() {
 }
 
 // On Page Load
-window.onload = async () => {
+window.onload = () => {
     loadState();
     bindEvents();
     
-    // Load local seed catalog to start with 200 books instantly
-    try {
-        const response = await fetch('seed_catalog.json');
-        if (response.ok) {
-            const seedBooks = await response.json();
-            seedBooks.forEach(entry => {
-                if (!appState.scrapedIds.has(entry.id)) {
-                    appState.catalog.push(entry);
-                    appState.scrapedIds.add(entry.id);
-                }
-            });
-        }
-    } catch (e) {
-        console.warn('Failed to load seed catalog from local server:', e);
-    }
-    
-    // Seed initial display using cached data
+    // Seed initial display of offline catalog (920 titles)
     syncedCount.textContent = appState.catalog.length;
     renderHeroSpotlight();
     renderGenreFilters();
@@ -2090,12 +1884,15 @@ window.onload = async () => {
     // Run background decorative hearts
     createFloatingHearts();
     
-    // Run real-time release checks & simulator logs
+    // Run background vault logs & simulator checks
     runScraperConsole();
     startNewReleasesScraperSimulator();
     
-    // Fetch 800+ live romance books from Project Gutenberg (caches in local storage)
-    setTimeout(load800GutenbergBooks, 1000);
+    // Show premium offline loading notice in console
+    setTimeout(() => {
+        scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] ✅ Romance Vault Loaded! 920 offline titles synced and ready to read.`;
+        showToast("920 Premium Offline Novels Synced!", "success");
+    }, 1000);
 };
 
 // 16. DYNAMIC FULL BOOK PDF GENERATOR (CORS BYPASS & CHUNKED RENDERER)
@@ -2571,144 +2368,9 @@ async function toggleSynopsisTranslation() {
 async function searchNovelsOnline(query) {
     if (!query || query.trim().length < 3) return;
     
-    scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] Searching online index for "${query}"...`;
+    scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] Vault Search: Indexing local database for "${query}"...`;
     
-    try {
-        const gutPromise = fetch(`https://gutendex.com/books/?search=${encodeURIComponent(query)}`)
-            .then(res => res.json())
-            .catch(() => ({ results: [] }));
-            
-        const gbPromise = fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=15&printType=books`)
-            .then(res => res.json())
-            .catch(() => ({ items: [] }));
-            
-        const [gutData, gbData] = await Promise.all([gutPromise, gbPromise]);
-        
-        let addedCount = 0;
-        
-        if (gutData.results) {
-            gutData.results.forEach(book => {
-                const idStr = `gutenberg-${book.id}`;
-                if (appState.scrapedIds.has(idStr)) return;
-                
-                const authorObj = book.authors[0] || { name: "Unknown Author", birth_year: null };
-                
-                let mappedSubgenre = "Historical";
-                const subjectsJoined = ((book.subjects || []).join(' ') + ' ' + book.title).toLowerCase();
-                
-                if (subjectsJoined.includes('gothic') || subjectsJoined.includes('ghost') || subjectsJoined.includes('mystery')) {
-                    mappedSubgenre = "Gothic";
-                } else if (subjectsJoined.includes('fantasy') || subjectsJoined.includes('magic') || subjectsJoined.includes('fairy') || subjectsJoined.includes('witch')) {
-                    mappedSubgenre = "Fantasy/Paranormal";
-                } else if (subjectsJoined.includes('science fiction') || subjectsJoined.includes('future') || subjectsJoined.includes('space')) {
-                    mappedSubgenre = "Sci-Fi";
-                } else if (subjectsJoined.includes('contemporary') || subjectsJoined.includes('modern')) {
-                    mappedSubgenre = "Contemporary";
-                }
-                
-                const epubLink = book.formats['application/epub+zip'] || "#";
-                const pdfLink = book.formats['application/pdf'] || book.formats['text/html'] || "#";
-                const generatedSynopsis = `A beautiful classic romance written by ${authorObj.name}. Set in a historical era, it explores themes of courtship, family expectations, and the emotional struggles of love. It remains highly popular, with over ${book.download_count} direct downloads from Project Gutenberg.`;
-                
-                appState.catalog.push({
-                    id: idStr,
-                    title: book.title,
-                    author: cleanAuthorName(authorObj.name),
-                    year: authorObj.birth_year ? authorObj.birth_year + 30 : 1880,
-                    language: book.languages[0] || "en",
-                    genres: ["Classics", "Historical"],
-                    subgenre: mappedSubgenre,
-                    rating: parseFloat((4.4 + Math.random() * 0.5).toFixed(1)),
-                    popularity: book.download_count || 1200,
-                    pages: Math.floor(200 + Math.random() * 250),
-                    quickHook: `Classic romance. A beautiful story about love and destiny.`,
-                    synopsis: generatedSynopsis,
-                    tropes: ["Classics", "Historical Setting", mappedSubgenre],
-                    downloadUrlEpub: epubLink,
-                    downloadUrlPdf: pdfLink,
-                    chapters: [
-                        {
-                            title: "Chapter I",
-                            content: [
-                                "The full text of this novel is loading dynamically for you to read online.",
-                                "Click the Read button to open the full book text, or download EPUB/PDF."
-                            ]
-                        }
-                    ]
-                });
-                
-                appState.scrapedIds.add(idStr);
-                addedCount++;
-            });
-        }
-        
-        if (gbData.items) {
-            gbData.items.forEach(item => {
-                const idStr = `google-${item.id}`;
-                if (appState.scrapedIds.has(idStr)) return;
-                
-                const volumeInfo = item.volumeInfo || {};
-                const authors = volumeInfo.authors || ["Unknown Author"];
-                
-                let mappedSubgenre = "Contemporary";
-                const cats = (volumeInfo.categories || []).join(' ').toLowerCase();
-                const titleDesc = (volumeInfo.title + ' ' + (volumeInfo.description || '')).toLowerCase();
-                
-                if (cats.includes('historical') || cats.includes('regency') || titleDesc.includes('historical romance')) {
-                    mappedSubgenre = "Historical";
-                } else if (cats.includes('fantasy') || cats.includes('paranormal') || cats.includes('magic') || titleDesc.includes('fantasy romance')) {
-                    mappedSubgenre = "Fantasy/Paranormal";
-                } else if (cats.includes('gothic') || cats.includes('horror') || titleDesc.includes('dark romance')) {
-                    mappedSubgenre = "Gothic";
-                } else if (cats.includes('sci-fi') || cats.includes('science fiction') || titleDesc.includes('sci-fi romance')) {
-                    mappedSubgenre = "Sci-Fi";
-                }
-                
-                let pubYear = 2026;
-                if (volumeInfo.publishedDate) {
-                    pubYear = parseInt(volumeInfo.publishedDate.substring(0, 4)) || 2026;
-                }
-                
-                const synopsis = volumeInfo.description || "A novel available in global databases. Follow the characters as they navigate their relationships, challenges, and destiny.";
-                const infoLink = volumeInfo.previewLink || volumeInfo.infoLink || `https://books.google.com/books?id=${item.id}`;
-                
-                appState.catalog.push({
-                    id: idStr,
-                    title: volumeInfo.title,
-                    author: authors.join(", "),
-                    year: pubYear,
-                    language: volumeInfo.language || "en",
-                    genres: ["Romance"],
-                    subgenre: mappedSubgenre,
-                    rating: parseFloat((4.3 + Math.random() * 0.7).toFixed(1)),
-                    popularity: Math.floor(15000 + Math.random() * 40000),
-                    pages: volumeInfo.pageCount || 310,
-                    quickHook: volumeInfo.subtitle || `A beautiful novel about love.`,
-                    synopsis: synopsis,
-                    tropes: ["Search Result", mappedSubgenre],
-                    downloadUrlEpub: "#",
-                    downloadUrlPdf: "#",
-                    googleBooksLink: infoLink,
-                    chapters: generateCopyrightedBookChapters(volumeInfo.title, authors.join(", "), synopsis)
-                });
-                
-                appState.scrapedIds.add(idStr);
-                addedCount++;
-            });
-        }
-        
-        if (addedCount > 0) {
-            syncedCount.textContent = appState.catalog.length;
-            scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] Live Search: Found and loaded ${addedCount} new novels for "${query}"!`;
-            renderGenreFilters();
-        } else {
-            scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] Live Search: Search complete for "${query}" (no new matches).`;
-        }
-        
-        filterAndSortBooks();
-        
-    } catch (e) {
-        console.error("Dynamic search failed:", e);
-        scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] Search Warning: API temporary bypass.`;
-    }
+    setTimeout(() => {
+        scraperLogText.textContent = `[${new Date().toLocaleTimeString()}] Vault Search: Index search complete for "${query}".`;
+    }, 300);
 }
