@@ -1,4 +1,4 @@
-// syncEngine.js - Active Background Sync Engine
+// syncEngine.js - Active Background Sync Engine (Upgraded Bulletproof Edition)
 // Dynamically fetches, downloads, parses and indexes complete full-text romance novels in IndexedDB.
 
 window.syncEngine = (function () {
@@ -8,34 +8,66 @@ window.syncEngine = (function () {
     let onSyncLogCallback = null;
     let onNovelSyncedCallback = null;
 
-    // Multi-proxy text fetcher with retry logic
-    async function fetchFullTextWithFallback(gutenbergId) {
-        const textUrl = `https://www.gutenberg.org/cache/epub/${gutenbergId}/pg${gutenbergId}.txt`;
-        const altUrl  = `https://www.gutenberg.org/files/${gutenbergId}/${gutenbergId}-0.txt`;
+    // Helper to extract and upgrade plain text URL from book formats
+    function getTextUrl(book) {
+        const formats = book.formats || {};
+        const keys = Object.keys(formats);
+        // Find first format that starts with text/plain
+        const txtKey = keys.find(k => k.startsWith('text/plain'));
+        
+        let url = null;
+        if (txtKey) {
+            url = formats[txtKey];
+        } else {
+            // Fallback to text/html
+            const htmlKey = keys.find(k => k.startsWith('text/html'));
+            if (htmlKey) url = formats[htmlKey];
+        }
+
+        if (url && url.startsWith('http://')) {
+            url = url.replace('http://', 'https://'); // Upgrade to prevent Mixed Content Blockers
+        }
+        return url;
+    }
+
+    // High-stability Multi-proxy text fetcher with AllOrigins JSON CORS bypass
+    async function fetchFullTextWithFallback(srcUrl) {
+        if (!srcUrl) throw new Error("Invalid source URL");
 
         const proxies = [
-            u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-            u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
-            u => `https://thingproxy.freeboard.io/fetch/${u}`
+            // 1. AllOrigins JSON Proxy (most stable, bypasses all CORS headers)
+            async (url) => {
+                const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+                if (!res.ok) throw new Error("AllOrigins JSON failed");
+                const json = await res.json();
+                if (!json.contents) throw new Error("AllOrigins contents empty");
+                return json.contents;
+            },
+            // 2. Codetabs CORS Proxy
+            async (url) => {
+                const res = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`);
+                if (!res.ok) throw new Error("Codetabs failed");
+                return await res.text();
+            },
+            // 3. AllOrigins Raw Proxy fallback
+            async (url) => {
+                const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);
+                if (!res.ok) throw new Error("AllOrigins raw failed");
+                return await res.text();
+            }
         ];
 
-        for (const makeProxy of proxies) {
-            for (const src of [textUrl, altUrl]) {
-                try {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 12000);
-                    
-                    const res = await fetch(makeProxy(src), { signal: controller.signal });
-                    clearTimeout(timeoutId);
-                    
-                    if (res.ok) {
-                        const text = await res.text();
-                        if (text && text.length > 5000) return text;
-                    }
-                } catch (_) { /* try next fallback */ }
+        for (const fetchProxy of proxies) {
+            try {
+                const text = await fetchProxy(srcUrl);
+                if (text && text.trim().length > 3000) {
+                    return text;
+                }
+            } catch (e) {
+                console.warn(`Proxy gateway skipped: ${e.message}`);
             }
         }
-        throw new Error(`Failed to download full text for Gutenberg ID ${gutenbergId}.`);
+        throw new Error("Unable to download full book text via proxy mirrors");
     }
 
     // High-performance Gutenberg text chapter parser
@@ -224,11 +256,17 @@ window.syncEngine = (function () {
                         continue; // Already fully synced
                     }
 
+                    const textUrl = getTextUrl(book);
+                    if (!textUrl) {
+                        log(`⚠️ Skipping "${book.title}" (no text url found)`);
+                        continue;
+                    }
+
                     log(`Discovered: "${book.title}" — Initiating deep full-text sync...`);
                     
                     try {
                         // Download full text in the background
-                        const fullText = await fetchFullTextWithFallback(book.id);
+                        const fullText = await fetchFullTextWithFallback(textUrl);
                         
                         log(`Deep Sync: Building chapters and assets for "${book.title}"...`);
                         
@@ -246,7 +284,7 @@ window.syncEngine = (function () {
                             onNovelSyncedCallback(novelObj);
                         }
                     } catch (e) {
-                        log(`⚠️ Bypass notice: skipping text fetch for "${book.title}" due to connection limits.`);
+                        log(`⚠️ Skipping "${book.title}" (text fetch rate-limited or blocked)`);
                     }
 
                     // Polite delay between sync cycles to prevent congestion
