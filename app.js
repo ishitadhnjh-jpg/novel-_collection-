@@ -2047,9 +2047,25 @@ function bindEvents() {
 }
 
 // On Page Load
-window.onload = () => {
+window.onload = async () => {
     loadState();
     bindEvents();
+    
+    // Load local seed catalog to start with 200 books instantly
+    try {
+        const response = await fetch('seed_catalog.json');
+        if (response.ok) {
+            const seedBooks = await response.json();
+            seedBooks.forEach(entry => {
+                if (!appState.scrapedIds.has(entry.id)) {
+                    appState.catalog.push(entry);
+                    appState.scrapedIds.add(entry.id);
+                }
+            });
+        }
+    } catch (e) {
+        console.warn('Failed to load seed catalog from local server:', e);
+    }
     
     // Seed initial display using cached data
     syncedCount.textContent = appState.catalog.length;
@@ -2066,10 +2082,6 @@ window.onload = () => {
     
     // Fetch 800+ live romance books from Project Gutenberg (caches in local storage)
     setTimeout(load800GutenbergBooks, 1000);
-    
-    // Fetch newly released romance novels from Google Books API
-    // Automatically auto-detects newly released and future romance novels!
-    setTimeout(fetchGoogleBooksRomance, 2500);
 };
 
 // 16. DYNAMIC FULL BOOK PDF GENERATOR (CORS BYPASS & CHUNKED RENDERER)
