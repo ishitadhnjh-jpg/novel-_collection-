@@ -608,7 +608,21 @@ async function fetchWithRetry(url) {
     for (let i = 0; i < attempts; i++) {
         try {
             const controller = new AbortController();
-            const timeoutId = seasync function load800GutenbergBooks() {
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            const res = await fetch(url, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (res.ok) return res;
+            // If not ok, throw to trigger retry
+            throw new Error(`HTTP ${res.status}`);
+        } catch (e) {
+            if (i === attempts - 1) throw e; // rethrow after last attempt
+            // small back‑off before next try
+            await new Promise(r => setTimeout(r, 500 * (i + 1)));
+        }
+    }
+}
+
+async function load800GutenbergBooks() {
     appState.activeSyncRunning = true;
     const TOPICS = ['romance', 'love', 'courtship', 'marriage', 'woman'];
     const MAX_PAGES = 30; // increased from 18 for broader coverage
