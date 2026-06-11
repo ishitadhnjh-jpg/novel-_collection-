@@ -843,6 +843,11 @@ function filterAndSortBooks() {
             });
         });
     }
+    // If no local results, fetch from Google Books API
+    if (query && filtered.length === 0) {
+        fetchExternalBook(query);
+        return;
+    }
     
     // Subgenre filter (only if search is empty)
     if (selectedSubgenre !== 'All' && !query) {
@@ -876,6 +881,47 @@ function filterAndSortBooks() {
 }
 
 // ----------------------------------------------------
+// Fetch book info from Google Books API when not found locally
+async function fetchExternalBook(query) {
+    try {
+        const resp = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}`);
+        if (!resp.ok) throw new Error('External API request failed');
+        const data = await resp.json();
+        if (!data.items || data.items.length === 0) {
+            showToast('No external results found.', 'warning');
+            return;
+        }
+        const info = data.items[0].volumeInfo;
+        const idStr = `google-${data.items[0].id}`;
+        if (appState.catalog.some(b => b.id === idStr)) return;
+        const newBook = {
+            id: idStr,
+            title: info.title || query,
+            author: (info.authors && info.authors[0]) || 'Unknown',
+            year: info.publishedDate ? parseInt(info.publishedDate.substring(0,4)) : new Date().getFullYear(),
+            language: info.language || 'en',
+            genres: info.categories || ['General'],
+            subgenre: 'External',
+            rating: info.averageRating || 4,
+            popularity: info.pageCount || 100,
+            pages: info.pageCount || 0,
+            quickHook: info.description ? info.description.substring(0,120) + '...' : '',
+            synopsis: info.description || '',
+            tropes: [],
+            downloadUrlEpub: '#',
+            downloadUrlPdf: '#',
+            chapters: [{ title: 'Chapter 1', content: ['(Full text not available)'] }]
+        };
+        appState.catalog.unshift(newBook);
+        // Re-run filter to include the new external book
+        filterAndSortBooks();
+        showToast(`Found "${newBook.title}" from external source.`, 'success');
+    } catch (e) {
+        console.error(e);
+        showToast('Error retrieving external book data.', 'warning');
+    }
+}
+
 // 10. BOOK LOVELIST (BOOKMARKS)
 // ----------------------------------------------------
 function toggleSaveBook(id) {
